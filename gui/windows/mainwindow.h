@@ -72,7 +72,7 @@
 //#include "preferences_gui.h"
 
 //#include "modelcontroller.h"
-//#include "backgroundworker.h"
+#include "backgroundworker.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -121,7 +121,7 @@ private slots:
 private:
 //    PreferencesGUI prefsGUI;
 //    icy::ModelController controller;   // simulation algorithms
-//    BackgroundWorker *worker;
+    BackgroundWorker *worker;
 
     QString m_sSettingsFile = "ic4_config";
     QLabel *statusLabel;                    // statusbar

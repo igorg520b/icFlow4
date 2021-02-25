@@ -9,13 +9,13 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-//    worker = new BackgroundWorker(&controller);
+    worker = new BackgroundWorker();
 
 //    connect(&controller.model, SIGNAL(requestGeometryUpdate()), SLOT(render_results()));
 //    connect(&controller, SIGNAL(stepAborted()),SLOT(updateGUI()));
 //    connect(&controller, SIGNAL(progressUpdated()),SLOT(progress_updated()));
 //    connect(&controller, SIGNAL(stepCompleted()), SLOT(updateGUI()));
-//    connect(worker, SIGNAL(workerPaused()), SLOT(background_worker_paused()));
+    connect(worker, SIGNAL(workerPaused()), SLOT(background_worker_paused()));
 
     // property browser
     pbrowser = new ObjectPropertyBrowser(this);
@@ -139,8 +139,28 @@ void MainWindow::closeEvent( QCloseEvent* event )
 //    event->accept();
 }
 
+void MainWindow::on_action_simulation_start_triggered(bool checked)
+{
+    if(!worker->running && checked){
+        qDebug() << "start button - starting";
+        statusLabel->setText("starting simulation");
+        // controller.Prepare();
+        worker->Resume();
+    }
+    else if(worker->running && !checked)
+    {
+        statusLabel->setText("pausing simulation");
+        qDebug() << "start button - pausing";
+        worker->Pause();
+        ui->action_simulation_start->setEnabled(false);
+    }
+
+}
+
 void MainWindow::background_worker_paused()
 {
+    // enable the "Start" button
+    qDebug() << "MainWindow::background_worker_paused()";
     ui->action_simulation_start->blockSignals(true);
     ui->action_simulation_start->setEnabled(true);
     ui->action_simulation_start->setChecked(false);
@@ -233,22 +253,5 @@ void MainWindow::PickCallbackFunction(vtkObject* caller,
 
 
 
-void MainWindow::on_action_simulation_start_triggered(bool checked)
-{
-    /*
-    if(!worker->running && checked){
-        qDebug() << "start button - starting";
-        statusLabel->setText("starting simulation");
-        controller.Prepare();
-        worker->Resume();
-    }
-    else if(worker->running && !checked)
-    {
-        statusLabel->setText("pausing simulation");
-        qDebug() << "start button - pausing";
-        worker->Pause();
-        ui->action_simulation_start->setEnabled(false);
-    }
-    */
-}
+
 

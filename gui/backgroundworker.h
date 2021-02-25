@@ -7,18 +7,17 @@
 #include <QMutex>
 #include <QWaitCondition>
 #include <QString>
-#include "modelcontroller.h"
+//#include "modelcontroller.h"
 
 class BackgroundWorker : public QThread
 {
     Q_OBJECT
 public:
-    BackgroundWorker(icy::ModelController *_model);
+    BackgroundWorker();
     void Pause();       // cancel current step and pause the worker thread
     void Resume();      // resume the worker thread
     void Finalize();    // exit the worker thread
 
-    icy::ModelController *model;
     bool timeToPause = true;
     bool running = false;
 

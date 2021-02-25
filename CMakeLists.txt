@@ -69,8 +69,25 @@ add_executable(fl4
     gui/objectpropertybrowser/objectpropertybrowser.cpp
     gui/objectpropertybrowser/objectpropertybrowser.h
 
-#    gui/backgroundworker.cpp
-#    gui/backgroundworker.h
+    gui/backgroundworker.cpp
+    gui/backgroundworker.h
+
+    geometry/node.cpp
+    geometry/node.h
+
+#[[
+    geometry/edge.cpp
+    geometry/edge.h
+
+    geometry/element.cpp
+    geometry/element.h
+    geometry/geometry.cpp
+    geometry/geometry_stable.cpp
+    geometry/geometry.h
+
+    geometry/floevisualization.h
+    geometry/floevisualization.cpp
+#]]
 
 #[[
     simulation/linearsystem.cpp
@@ -82,20 +99,9 @@ add_executable(fl4
     geometry/solid3d.cpp
     geometry/solid3d.h
 
-    geometry/node.cpp
-    geometry/node.h
-    geometry/edge.cpp
-    geometry/edge.h
 
-    geometry/element.cpp
-    geometry/element.h
-    geometry/geometry.cpp
-    geometry/geometry_stable.cpp
-    geometry/geometry.h
     geometry/model.cpp
     geometry/model.h
-    geometry/floevisualization.h
-    geometry/floevisualization.cpp
 
     simulation/frameinfo.h
     simulation/modelcontroller.cpp

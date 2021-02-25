@@ -1,6 +1,6 @@
 #include "backgroundworker.h"
 
-BackgroundWorker::BackgroundWorker(icy::ModelController *_model) : model(_model)
+BackgroundWorker::BackgroundWorker()
 {
     this->start();
 }
@@ -8,6 +8,7 @@ BackgroundWorker::BackgroundWorker(icy::ModelController *_model) : model(_model)
 // resume the worker thread
 void BackgroundWorker::Resume()
 {
+//    controller->Preapare();
     condition.wakeOne();
 }
 
@@ -16,18 +17,19 @@ void BackgroundWorker::Pause()
 {
     if(!running) return;
     timeToPause = true;
-    model->RequestAbort();
+//    model->RequestAbort();
 }
 
 // exit the worker thread
 void BackgroundWorker::Finalize()
 {
     qDebug() << "BackgroundWorker::Finalize()";
-    model->RequestAbort();
+//    controller->RequestAbort();
     kill=true;
     condition.wakeOne();
-    wait();
+    bool result = wait();
     qDebug() << "BackgroundWorker::Finalize() terminated";
+    qDebug() << "QThread wait() returns " << result;
     running = false;
 }
 
@@ -44,8 +46,12 @@ void BackgroundWorker::run()
             mutex.unlock();
         }
         if(kill) break;
-        model->Step();
-        if(model->getCurrentStep()==model->prms.MaxSteps || model->requestToStop) timeToPause = true;
+
+        qDebug() << "sleeping for 1 second";
+        sleep(1);
+
+//        bool result = controller->Step();
+//        if(!result) timeToPause = true;
     }
     qDebug() << "BackgroundWorker::run() terminated";
 }
