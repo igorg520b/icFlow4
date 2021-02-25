@@ -9,7 +9,7 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-    worker = new BackgroundWorker();
+    worker = new BackgroundWorker(&testController);
 
 //    connect(&controller.model, SIGNAL(requestGeometryUpdate()), SLOT(render_results()));
 //    connect(&controller, SIGNAL(stepAborted()),SLOT(updateGUI()));
@@ -129,7 +129,7 @@ void MainWindow::closeEvent( QCloseEvent* event )
 //    prefsGUI.SaveState(settings);
 
     // kill backgroundworker
-//    worker->Finalize();
+    worker->Finalize();
 
 
 //    controller.prms.Serialize();

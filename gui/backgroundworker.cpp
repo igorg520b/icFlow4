@@ -1,6 +1,6 @@
 #include "backgroundworker.h"
 
-BackgroundWorker::BackgroundWorker()
+BackgroundWorker::BackgroundWorker(ModelControllerInterface *controller_) : controller(controller_)
 {
     this->start();
 }
@@ -8,7 +8,7 @@ BackgroundWorker::BackgroundWorker()
 // resume the worker thread
 void BackgroundWorker::Resume()
 {
-//    controller->Preapare();
+    controller->Prepare();
     condition.wakeOne();
 }
 
@@ -17,14 +17,14 @@ void BackgroundWorker::Pause()
 {
     if(!running) return;
     timeToPause = true;
-//    model->RequestAbort();
+    controller->RequestAbort();
 }
 
 // exit the worker thread
 void BackgroundWorker::Finalize()
 {
     qDebug() << "BackgroundWorker::Finalize()";
-//    controller->RequestAbort();
+    controller->RequestAbort();
     kill=true;
     condition.wakeOne();
     bool result = wait();
@@ -47,11 +47,8 @@ void BackgroundWorker::run()
         }
         if(kill) break;
 
-        qDebug() << "sleeping for 1 second";
-        sleep(1);
-
-//        bool result = controller->Step();
-//        if(!result) timeToPause = true;
+        bool result = controller->Step();
+        if(!result) timeToPause = true;
     }
     qDebug() << "BackgroundWorker::run() terminated";
 }

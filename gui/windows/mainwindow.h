@@ -72,6 +72,7 @@
 //#include "preferences_gui.h"
 
 //#include "modelcontroller.h"
+#include "modelcontrollerinterface.h"
 #include "backgroundworker.h"
 
 QT_BEGIN_NAMESPACE
@@ -121,6 +122,7 @@ private slots:
 private:
 //    PreferencesGUI prefsGUI;
 //    icy::ModelController controller;   // simulation algorithms
+    ModelControllerTest testController;
     BackgroundWorker *worker;
 
     QString m_sSettingsFile = "ic4_config";

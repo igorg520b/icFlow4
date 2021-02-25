@@ -72,6 +72,12 @@ add_executable(fl4
     gui/backgroundworker.cpp
     gui/backgroundworker.h
 
+    simulation/modelcontrollerinterface.cpp
+    simulation/modelcontrollerinterface.h
+
+#    simulation/modelcontroller.cpp
+#    simulation/modelcontroller.h
+
     geometry/node.cpp
     geometry/node.h
 
@@ -104,13 +110,11 @@ add_executable(fl4
     geometry/model.h
 
     simulation/frameinfo.h
-    simulation/modelcontroller.cpp
-    simulation/modelcontroller.h
 #]]
 )
 
 
-target_include_directories(fl4 PUBLIC gui geometry gui/propertybrowser)
+target_include_directories(fl4 PUBLIC gui geometry simulation gui/propertybrowser)
 target_include_directories(fl4 PUBLIC gui gui/objectpropertybrowser gui/windows)
 
 # some paths need to be set manually
