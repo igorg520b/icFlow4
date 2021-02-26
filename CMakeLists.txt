@@ -75,8 +75,8 @@ add_executable(fl4
     simulation/modelcontrollerinterface.cpp
     simulation/modelcontrollerinterface.h
 
-#    simulation/modelcontroller.cpp
-#    simulation/modelcontroller.h
+    simulation/modelcontroller.cpp
+    simulation/modelcontroller.h
 
     geometry/node.cpp
     geometry/node.h

@@ -71,8 +71,8 @@
 #include "objectpropertybrowser.h"
 //#include "preferences_gui.h"
 
-//#include "modelcontroller.h"
-#include "modelcontrollerinterface.h"
+#include "modelcontroller.h"
+//#include "modelcontrollerinterface.h"
 #include "backgroundworker.h"
 
 QT_BEGIN_NAMESPACE
@@ -100,29 +100,22 @@ public:
 
 private slots:
 
-    void on_action_quit_triggered();
-
     void comboboxIndexChanged_visualizations(int index);
 
-    void progress_updated();
-    void render_results();
-    void background_worker_paused();
-
-
+    void on_action_quit_triggered();
     void on_action_simulation_single_step_triggered();
-
+    void on_action_simulation_start_triggered(bool checked);
     void on_action_camera_reset_triggered();
 
-    void on_action_simulation_start_triggered(bool checked);
-
     void updateGUI();   // when simulation is started/stopped or when a step is advanced
+    void render_results();
 
-
+    void background_worker_paused();
 
 private:
 //    PreferencesGUI prefsGUI;
 //    icy::ModelController controller;   // simulation algorithms
-    ModelControllerTest testController;
+    icy::ModelController modelController;
     BackgroundWorker *worker;
 
     QString m_sSettingsFile = "ic4_config";

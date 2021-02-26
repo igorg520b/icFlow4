@@ -9,12 +9,11 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-    worker = new BackgroundWorker(&testController);
+    worker = new BackgroundWorker(&modelController);
 
 //    connect(&controller.model, SIGNAL(requestGeometryUpdate()), SLOT(render_results()));
-//    connect(&controller, SIGNAL(stepAborted()),SLOT(updateGUI()));
-//    connect(&controller, SIGNAL(progressUpdated()),SLOT(progress_updated()));
-//    connect(&controller, SIGNAL(stepCompleted()), SLOT(updateGUI()));
+    connect(&modelController, SIGNAL(stepAborted()),SLOT(updateGUI()));
+    connect(&modelController, SIGNAL(stepCompleted()), SLOT(updateGUI()));
     connect(worker, SIGNAL(workerPaused()), SLOT(background_worker_paused()));
 
     // property browser
@@ -63,20 +62,24 @@ MainWindow::MainWindow(QWidget *parent)
 */
     // slider
     labelStepCount = new QLabel();
-    ui->toolBar->addWidget(labelStepCount);
+//    ui->toolBar->addWidget(labelStepCount);
 
     // statusbar
     statusLabel = new QLabel("-");
 
-    statusLabelAttempt = new QLabel("Att: ");
+    statusLabelAttempt = new QLabel(" --- ");
 
     QSizePolicy sp;
     sp.setHorizontalPolicy(QSizePolicy::Fixed);
     statusLabelAttempt->setSizePolicy(sp);
     statusLabelAttempt->setFixedWidth(70);
 
+    labelStepCount->setSizePolicy(sp);
+    labelStepCount->setFixedWidth(70);
+
     ui->statusbar->addWidget(statusLabel);
     ui->statusbar->addPermanentWidget(statusLabelAttempt);
+    ui->statusbar->addPermanentWidget(labelStepCount);
 
     // read/restore saved settings
     QSettings settings(m_sSettingsFile);
@@ -130,13 +133,7 @@ void MainWindow::closeEvent( QCloseEvent* event )
 
     // kill backgroundworker
     worker->Finalize();
-
-
-//    controller.prms.Serialize();
-//    controller.serializer.SaveParams(controller.prms.serialization_buffer,
-//                                     icy::SimParams::buffer_size);
-//    controller.serializer.CloseFile();
-//    event->accept();
+    event->accept();
 }
 
 void MainWindow::on_action_simulation_start_triggered(bool checked)
@@ -165,6 +162,7 @@ void MainWindow::background_worker_paused()
     ui->action_simulation_start->setEnabled(true);
     ui->action_simulation_start->setChecked(false);
     ui->action_simulation_start->blockSignals(false);
+    statusLabel->setText("stopped");
 }
 
 void MainWindow::render_results()
@@ -177,8 +175,8 @@ void MainWindow::render_results()
 void MainWindow::on_action_simulation_single_step_triggered()
 {
     qDebug() << "take one step";
-//    controller.Prepare();
-//    controller.Step();
+    modelController.Prepare();
+    modelController.Step();
 }
 
 void MainWindow::on_action_camera_reset_triggered()
@@ -197,23 +195,16 @@ void MainWindow::on_action_camera_reset_triggered()
 void MainWindow::updateGUI()
 {
 
-//    bool r = worker->running;
-//    ui->action_simulation_single_step->setEnabled(!r);
+    bool r = worker->running;
+    ui->action_simulation_single_step->setEnabled(!r);
 
-//    statusLabel->setText(r ? "running" : "paused");
+//    labelStepCount->setText(QString::number(modelController.currentStep));
+    labelStepCount->setText(QString{"step: %1"}.arg(modelController.currentStep));
+
+    //    statusLabel->setText(r ? "running" : "paused");
 //    if(!r) ui->action_simulation_start->setEnabled(true);
 
-    progress_updated();
 }
-
-void MainWindow::progress_updated()
-{
-//    icy::FrameInfo &ts = controller.ts;
-//    statusLabelAttempt->setText(QString{"Att: %1"}.arg(ts.count_attempts));
-
-//    labelStepCount->setText(QString::number(controller.getCurrentStep()));
-}
-
 
 
 
