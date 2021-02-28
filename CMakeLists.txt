@@ -46,7 +46,6 @@ add_executable(fl4
     gui/windows/mainwindow.ui
     gui/icons.qrc
 #    gui/preferences_gui.h
-#    simulation/parameters_sim.h
 
     #property browser
     gui/propertybrowser/qtvariantproperty.h
@@ -81,15 +80,22 @@ add_executable(fl4
     geometry/node.cpp
     geometry/node.h
 
+    geometry/element.cpp
+    geometry/element.h
+
+    geometry/mesh.cpp
+    geometry/mesh.h
+
+    simulation/parameters_sim.h
+    simulation/model.cpp
+    simulation/model.h
+
+    simulation/equationofmotionsolver.cpp
+    simulation/equationofmotionsolver.h
+
 #[[
     geometry/edge.cpp
     geometry/edge.h
-
-    geometry/element.cpp
-    geometry/element.h
-    geometry/geometry.cpp
-    geometry/geometry_stable.cpp
-    geometry/geometry.h
 
     geometry/floevisualization.h
     geometry/floevisualization.cpp
@@ -106,8 +112,6 @@ add_executable(fl4
     geometry/solid3d.h
 
 
-    geometry/model.cpp
-    geometry/model.h
 
     simulation/frameinfo.h
 #]]
