@@ -23,7 +23,7 @@ MainWindow::MainWindow(QWidget *parent)
     qt_vtk_widget = new QVTKOpenGLNativeWidget();
     qt_vtk_widget->setRenderWindow(renderWindow);
     renderer->SetBackground(colors->GetColor3d("White").GetData());
-//    renderer->AddActor(controller.model.floes_vtk.actor_mesh);
+    renderer->AddActor(modelController.model.actor_mesh);
 
     renderWindow->AddRenderer(renderer);
 
