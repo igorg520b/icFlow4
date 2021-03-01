@@ -8,13 +8,17 @@
 
 icy::Node::Node()
 {
-//    adjacent_elems.reserve(7);
-//    adjacent_elems.clear();
+    Reset();
+}
+
+void icy::Node::Reset()
+{
     x_initial = xn = vn = xt = Eigen::Vector2d::Zero();
     id = -1;
     area = 0;
+
+    //    adjacent_elems.reserve(7);
+    //    adjacent_elems.clear();
 }
-
-
 
 

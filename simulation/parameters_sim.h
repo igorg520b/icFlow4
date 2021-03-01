@@ -16,7 +16,6 @@ class icy::SimParams : public QObject
     Q_OBJECT
 
     // general
-    //Q_PROPERTY(bool s_SaveResult MEMBER SaveResult NOTIFY propertyChanged)
     Q_PROPERTY(int s_MaxSteps MEMBER MaxSteps NOTIFY propertyChanged)
 
     // integration
@@ -30,10 +29,14 @@ class icy::SimParams : public QObject
 
     Q_PROPERTY(double p_Thickness MEMBER Thickness NOTIFY propertyChanged)
 
+    // meshing
+    Q_PROPERTY(double s_ElemSize MEMBER CharacteristicLength NOTIFY propertyChanged)
+
 public:
     int MaxSteps;
     double InitialTimeStep;
     double Gravity, Density, PoissonsRatio, YoungsModulus, Thickness;
+    double CharacteristicLength;
 
     SimParams() { Reset(); }
 
@@ -48,6 +51,8 @@ public:
 
         PoissonsRatio = 0.3;
         YoungsModulus = 3.7e4;
+
+        CharacteristicLength = 0.05;
 
         emit propertyChanged();
     }

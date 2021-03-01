@@ -30,7 +30,6 @@ namespace icy { class Mesh; class Node; class Element; class Edge;}
 class icy::Mesh
 {
 public:
-    Mesh(double CharacteristicLengthMax);
 
     // nodes, elements and edges
     std::vector<icy::Node> nodes;

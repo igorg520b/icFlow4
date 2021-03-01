@@ -19,6 +19,7 @@ class icy::Node
 {
 public:
     Node();
+    void Reset();
 
     int id;          // sequential number in a given floe
     double area;        // area that the node "represents", for applying various forces

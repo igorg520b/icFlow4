@@ -2,11 +2,13 @@
 #include <QtGlobal>
 #include "model.h"
 
-namespace model = gmsh::model;
-namespace factory = gmsh::model::occ;
 
 
-void icy::Model::Reset() {}
+
+void icy::Model::Reset(SimParams &prms)
+{
+    mesh.Reset(prms.CharacteristicLength);
+}
 
 void icy::Model::AssembleAndSolve(SimParams &prms, double timeStep) {}
 void icy::Model::GetResultFromSolver(double timeStep) {}

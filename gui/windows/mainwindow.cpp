@@ -103,7 +103,7 @@ MainWindow::MainWindow(QWidget *parent)
 
 void MainWindow::showEvent( QShowEvent*)
 {
-//    pbrowser->setActiveObject(&controller.prms);
+    pbrowser->setActiveObject(&modelController.prms);
     updateGUI();
     renderWindow->Render();
 }

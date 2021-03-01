@@ -4,6 +4,11 @@
 #include <thread>
 #include <iostream>
 
+icy::ModelController::ModelController()
+{
+    model.Reset(prms);
+}
+
 void icy::ModelController::Prepare(void)
 {
     abortRequested = false;

@@ -11,6 +11,16 @@
 
 #include <QtDebug>
 
+
+void icy::Element::Reset(void)
+{
+    for(int i=0;i<3;i++) {
+        nds[i] = nullptr;
+        adj_elems[i] = nullptr;
+    }
+    area_initial = 0;
+}
+
 /*
 void icy::Element::UpdateSparseSystemEntries(LinearSystem &ls)
 {

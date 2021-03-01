@@ -6,7 +6,8 @@
 #include <QObject>
 #include <QDebug>
 
-//#include "model.h"
+#include "model.h"
+#include "parameters_sim.h"
 
 #include "modelcontrollerinterface.h"
 
@@ -17,13 +18,14 @@ class icy::ModelController : public QObject, public ModelControllerInterface
     Q_OBJECT
 
 public:
+    ModelController();
 
     void Prepare(void) override;
     bool Step(void) override;
     void RequestAbort(void) override;
 
-//    icy::Model model;
-//    SimParams prms;
+    icy::Model model;
+    SimParams prms;
 
     int currentStep = 0;
 

@@ -10,7 +10,7 @@
 #include <chrono>
 #include <unordered_set>
 
-#include <gmsh.h>
+
 
 #include "parameters_sim.h"
 #include "mesh.h"
@@ -27,7 +27,7 @@ public:
     enum VisOpt { none, energy_density };
     Q_ENUM(VisOpt)
 
-    void Reset();
+    void Reset(SimParams &prms);
 
     void AssembleAndSolve(SimParams &prms, double timeStep);
     void GetResultFromSolver(double timeStep);
