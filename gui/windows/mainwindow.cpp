@@ -29,22 +29,10 @@ MainWindow::MainWindow(QWidget *parent)
     renderer->AddActor(modelController.model.actor_mesh);
 
     renderWindow->AddRenderer(renderer);
-//    renderWindow->GetInteractor()->SetInteractorStyle(interactorStyleRB2D);
     renderWindow->GetInteractor()->SetInteractorStyle(specialSelector2D);
+    specialSelector2D->mw = this;
 
     renderWindow->GetInteractor()->SetPicker(pointPicker);
-/*    vtkSmartPointer<vtkCallbackCommand> pickCallback =
-            vtkSmartPointer<vtkCallbackCommand>::New();
-    pickCallback->SetCallback(MainWindow::PickCallbackFunction);
-    pointPicker->AddObserver(vtkCommand::EndPickEvent, pickCallback);
-    pickCallback->SetClientData((void*)this);
-*/
-
-    vtkSmartPointer<vtkCallbackCommand> selectionChangedCallback =
-      vtkSmartPointer<vtkCallbackCommand>::New();
-    selectionChangedCallback->SetCallback (MainWindow::SelectionChangedCallbackFunction);
-    interactorStyleRB2D->AddObserver ( vtkCommand::SelectionChangedEvent, selectionChangedCallback );
-
 
     // right frame
     right_side_container = new QWidget;
@@ -241,40 +229,6 @@ void MainWindow::comboboxIndexChanged_visualizations(int index)
 }
 
 
-// callback functions
-
-void MainWindow::PickCallbackFunction(vtkObject* caller,
-                          long unsigned int vtkNotUsed(eventId),
-                          void* clientData,
-                          void* vtkNotUsed(callData))
-{
-    vtkPointPicker* pp = static_cast<vtkPointPicker*>(caller);
-    MainWindow *mw = (MainWindow*)clientData;
-
-    vtkIdType id = pp->GetPointId();
-    qDebug() << "pointpicker vtkCommand::EndPickEvent " << id;
-    std::cout << "pointpicker" <<std::endl;
-
-    /*
-    mw->controller.model.floes_vtk.UnsafeUpdateSelection(mw->controller.model.floes.nodes.get(),
-                                                     pp->GetPointId());
-    mw->renderWindow->Render();
-    */
-}
-
-
-void MainWindow::SelectionChangedCallbackFunction ( vtkObject* vtkNotUsed(caller),
-  long unsigned int vtkNotUsed(eventId), void* vtkNotUsed(clientData), void* callData )
-{
-  unsigned int* rect = reinterpret_cast<unsigned int*> ( callData );
-  unsigned int pos1X = rect[0];
-  unsigned int pos1Y = rect[1];
-  unsigned int pos2X = rect[2];
-  unsigned int pos2Y = rect[3];
-
-  std::cout << "vtkCommand::SelectionChangedEvent " << "Start x: " << pos1X << " Start y: " << pos1Y
-            << " End x: " << pos2X << " End y: " << pos2Y << std::endl;
-}
 
 
 

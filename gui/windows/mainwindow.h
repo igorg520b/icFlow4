@@ -53,14 +53,14 @@
 #include <vtkPointPicker.h>
 #include <vtkProp3DCollection.h>
 #include <vtkRenderWindowInteractor.h>
-#include <vtkCallbackCommand.h>
-#include <vtkInteractorStyleRubberBandPick.h>
+//#include <vtkCallbackCommand.h>
+//#include <vtkInteractorStyleRubberBandPick.h>
 
 #include <vtkWindowToImageFilter.h>
 #include <vtkPNGWriter.h>
 #include <vtkJPEGWriter.h>
 
-#include <vtkInteractorStyleRubberBand2D.h>
+//#include <vtkInteractorStyleRubberBand2D.h>
 #include "SpecialSelector2D.h"
 
 #include <iostream>
@@ -75,7 +75,6 @@
 //#include "preferences_gui.h"
 
 #include "modelcontroller.h"
-//#include "modelcontrollerinterface.h"
 #include "backgroundworker.h"
 
 QT_BEGIN_NAMESPACE
@@ -95,13 +94,6 @@ public:
     void showEvent( QShowEvent* event ) override;
     void closeEvent( QCloseEvent* event ) override;
 
-    static void PickCallbackFunction(vtkObject* caller,
-                              long unsigned int vtkNotUsed(eventId),
-                              void* vtkNotUsed(clientData),
-                              void* vtkNotUsed(callData));
-
-    static void SelectionChangedCallbackFunction ( vtkObject* vtkNotUsed(caller),
-      long unsigned int vtkNotUsed(eventId), void* vtkNotUsed(clientData), void* callData );
 
 
 
@@ -122,7 +114,6 @@ private slots:
 private:
 //    PreferencesGUI prefsGUI;
 //    icy::ModelController controller;   // simulation algorithms
-    icy::ModelController modelController;
     BackgroundWorker *worker;
 
     QString m_sSettingsFile = "ic4_config";
@@ -140,9 +131,11 @@ private:
     ObjectPropertyBrowser *pbrowser;
 
     // VTK
+    icy::ModelController modelController;
+    vtkNew<vtkGenericOpenGLRenderWindow> renderWindow;
+
     QVTKOpenGLNativeWidget *qt_vtk_widget;
 
-    vtkNew<vtkGenericOpenGLRenderWindow> renderWindow;
     vtkNew<vtkRenderer> renderer;
     vtkNew<vtkNamedColors> colors;
     vtkNew<vtkPointPicker> pointPicker;
@@ -150,6 +143,9 @@ private:
     vtkNew<SpecialSelector2D> specialSelector2D;
 
     const QString wtitle = "icFlow4: Finite Element Simulation";
+
+    friend class SpecialSelector2D;
+
 
 };
 #endif // MAINWINDOW_H

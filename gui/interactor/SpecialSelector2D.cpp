@@ -19,16 +19,18 @@
 -------------------------------------------------------------------------*/
 
 #include "SpecialSelector2D.h"
+#include "mainwindow.h"
 
-#include "vtkActor.h"
-#include "vtkCamera.h"
-#include "vtkCommand.h"
-#include "vtkObjectFactory.h"
-#include "vtkRenderWindow.h"
-#include "vtkRenderWindowInteractor.h"
-#include "vtkRenderer.h"
-#include "vtkUnsignedCharArray.h"
-
+#include <vtkActor.h>
+#include <vtkCamera.h>
+#include <vtkCommand.h>
+#include <vtkObjectFactory.h>
+#include <vtkRenderWindow.h>
+#include <vtkRenderWindowInteractor.h>
+#include <vtkRenderer.h>
+#include <vtkUnsignedCharArray.h>
+#include <vtkPointPicker.h>
+#include <vtkRendererCollection.h>
 
 #include <iostream>
 
@@ -39,6 +41,69 @@ void SpecialSelector2D::OnLeftButtonDown()
     std::cout << "SpecialSelector2D::OnLeftButtonDown()" << std::endl;
     vtkInteractorStyleRubberBand2D::OnLeftButtonDown();
 }
+
+void SpecialSelector2D::OnLeftButtonUp()
+{
+    std::cout << "SpecialSelector2D::OnLeftButtonUp()" << std::endl;
+    vtkInteractorStyleRubberBand2D::OnLeftButtonUp();
+}
+
+
+void SpecialSelector2D::OnRightButtonDown()
+{
+    std::cout << "SpecialSelector2D::OnRightButtonDown()" << std::endl;
+    //vtkPointPicker
+    vtkAbstractPicker* picker = this->Interactor->GetPicker();
+    vtkPointPicker *pp = dynamic_cast<vtkPointPicker*>(picker);
+
+    int result = pp->Pick(this->Interactor->GetEventPosition()[0],
+            this->Interactor->GetEventPosition()[1],
+            0,
+            this->Interactor->GetRenderWindow()->GetRenderers()->GetFirstRenderer());
+
+    if(result==0) {
+        std::cout << "SpecialSelector2D::OnRightButtonDown() nothing picked1" << std::endl;
+        return;
+    }
+
+    vtkIdType id = pp->GetPointId();
+    if(id<0) {
+        std::cout << "SpecialSelector2D::OnRightButtonDown() nothing picked2" << std::endl;
+        return;
+    }
+    std::cout << "SpecialSelector2D::OnRightButtonDown() " << id << std::endl;
+
+    mw->modelController.model.mesh.nodes[id].pinned = !mw->modelController.model.mesh.nodes[id].pinned;
+    mw->modelController.model.UnsafeUpdateGeometry();
+    mw->renderWindow->Render();
+
+    /*
+      std::cout << "Picking pixel: " << this->Interactor->GetEventPosition()[0] << " " << this->Interactor->GetEventPosition()[1] << std::endl;
+      this->Interactor->GetPicker()->Pick(this->Interactor->GetEventPosition()[0],
+                         this->Interactor->GetEventPosition()[1],
+                         0,  // always zero.
+                         this->Interactor->GetRenderWindow()->GetRenderers()->GetFirstRenderer());
+      double picked[3];
+      this->Interactor->GetPicker()->GetPickPosition(picked);
+      std::cout << "Picked value: " << picked[0] << " " << picked[1] << " " << picked[2] << std::endl;
+*/
+
+//    vtkInteractorStyleRubberBand2D::OnRightButtonDown();
+}
+
+void SpecialSelector2D::OnRightButtonUp()
+{
+    std::cout << "SpecialSelector2D::OnRightButtonUp())" << std::endl;
+//    vtkInteractorStyleRubberBand2D::OnRightButtonUp();
+}
+
+
+void SpecialSelector2D::OnMouseMove()
+{
+    std::cout << "SpecialSelector2D::OnMouseMove()" << std::endl;
+    vtkInteractorStyleRubberBand2D::OnMouseMove();
+}
+
 
 /*
 vtkStandardNewMacro(vtkInteractorStyleRubberBand2D);

@@ -88,6 +88,7 @@ void icy::Mesh::Reset(double CharacteristicLengthMax)
         nd.id = count;
         nd.x_initial << x, y;
         nd.xt = nd.xn = nd.x_initial;
+        if(y==0) nd.pinned=true;
         mtags[tag] = count;
         count++;
     }

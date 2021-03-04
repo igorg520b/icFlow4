@@ -22,6 +22,8 @@ public:
     void Reset();
 
     int id;          // sequential number in a given floe
+    bool pinned = false;
+    bool selected = false;
     double area;        // area that the node "represents", for applying various forces
 
 //    tbb::concurrent_vector<icy::Element*> adjacent_elems;

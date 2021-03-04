@@ -72,7 +72,7 @@ public:
 
 private:
     //    icy::LinearSystem ls;
-    QMutex vtk_update_mutex; // to prevent modifying mesh data while updating VTK representation
+//    QMutex vtk_update_mutex; // to prevent modifying mesh data while updating VTK representation
     bool vtk_update_requested = false;  // true when signal has been already emitted to update vtk geometry
     VisOpt VisualizingVariable = VisOpt::none;
 
@@ -106,8 +106,8 @@ signals:
 
 private:
     static constexpr float lutArrayBands[6][3] =
-{{0.684154, 0.875059, 0.95523},
-    {0.882734, 0.823682,0.375036},
+{{0.084154, 0.075059, 0.095523},
+    {0.0882734, 0.623682,0.0375036},
     {0.601724, 0.748252, 0.492262},
     {0.745543, 0.423584, 0.52455},
     {0.756931, 0.53206, 0.359658},

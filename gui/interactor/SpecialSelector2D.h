@@ -22,20 +22,24 @@
 
 class vtkUnsignedCharArray;
 
+class MainWindow;
+
 class SpecialSelector2D : public vtkInteractorStyleRubberBand2D
 {
 public:
     static SpecialSelector2D* New();
     vtkTypeMacro(SpecialSelector2D, vtkInteractorStyleRubberBand2D);
+    MainWindow* mw;
 
-  void OnLeftButtonDown() override;
+    void OnLeftButtonDown() override;
+    void OnLeftButtonUp() override;
+    void OnRightButtonDown() override;
+    void OnRightButtonUp() override;
+    void OnMouseMove() override;
+
 /*
-  void OnLeftButtonUp() override;
   void OnMiddleButtonDown() override;
   void OnMiddleButtonUp() override;
-  void OnRightButtonDown() override;
-  void OnRightButtonUp() override;
-  void OnMouseMove() override;
   void OnMouseWheelForward() override;
   void OnMouseWheelBackward() override;
 */
