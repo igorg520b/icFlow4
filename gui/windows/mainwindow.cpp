@@ -22,17 +22,29 @@ MainWindow::MainWindow(QWidget *parent)
     // VTK
     qt_vtk_widget = new QVTKOpenGLNativeWidget();
     qt_vtk_widget->setRenderWindow(renderWindow);
+
+
     renderer->SetBackground(colors->GetColor3d("White").GetData());
+    renderer->AddActor(modelController.model.actor_selected_nodes);
     renderer->AddActor(modelController.model.actor_mesh);
 
     renderWindow->AddRenderer(renderer);
+//    renderWindow->GetInteractor()->SetInteractorStyle(interactorStyleRB2D);
+    renderWindow->GetInteractor()->SetInteractorStyle(specialSelector2D);
 
     renderWindow->GetInteractor()->SetPicker(pointPicker);
-    vtkSmartPointer<vtkCallbackCommand> pickCallback =
+/*    vtkSmartPointer<vtkCallbackCommand> pickCallback =
             vtkSmartPointer<vtkCallbackCommand>::New();
     pickCallback->SetCallback(MainWindow::PickCallbackFunction);
     pointPicker->AddObserver(vtkCommand::EndPickEvent, pickCallback);
     pickCallback->SetClientData((void*)this);
+*/
+
+    vtkSmartPointer<vtkCallbackCommand> selectionChangedCallback =
+      vtkSmartPointer<vtkCallbackCommand>::New();
+    selectionChangedCallback->SetCallback (MainWindow::SelectionChangedCallbackFunction);
+    interactorStyleRB2D->AddObserver ( vtkCommand::SelectionChangedEvent, selectionChangedCallback );
+
 
     // right frame
     right_side_container = new QWidget;
@@ -52,14 +64,14 @@ MainWindow::MainWindow(QWidget *parent)
     comboBox_visualizations = new QComboBox();
     ui->toolBar->addWidget(comboBox_visualizations);
 
-/*    // populate combobox
-    QMetaEnum qme = QMetaEnum::fromType<icy::FloeVisualization::VisOpt>();
+    // populate combobox
+    QMetaEnum qme = QMetaEnum::fromType<icy::Model::VisOpt>();
     for(int i=0;i<qme.keyCount();i++) comboBox_visualizations->addItem(qme.key(i));
 
     connect(comboBox_visualizations, QOverload<int>::of(&QComboBox::currentIndexChanged),
             [=](int index){ comboboxIndexChanged_visualizations(index); });
 
-*/
+
     // slider
     labelStepCount = new QLabel();
 //    ui->toolBar->addWidget(labelStepCount);
@@ -85,15 +97,20 @@ MainWindow::MainWindow(QWidget *parent)
     QSettings settings(m_sSettingsFile);
     splitter_main->restoreState(settings.value("splitter_main").toByteArray());
 
+    vtkCamera* camera = renderer->GetActiveCamera();
+    camera->ParallelProjectionOn();
+
     QVariant var = settings.value("camData");
     if(!var.isNull()) {
         QByteArray arr = var.toByteArray();
         double *vec = (double*)arr.constData();
-        renderer->GetActiveCamera()->SetPosition(vec[0],vec[1],vec[2]);
-        renderer->GetActiveCamera()->SetFocalPoint(vec[3],vec[4],vec[5]);
-        renderer->GetActiveCamera()->SetViewUp(vec[6],vec[7],vec[8]);
-        renderer->GetActiveCamera()->SetViewAngle(vec[9]);
+        camera->SetPosition(vec[0],vec[1],vec[2]);
+        camera->SetFocalPoint(vec[3],vec[4],vec[5]);
+        camera->SetViewUp(vec[6],vec[7],vec[8]);
+        camera->SetViewAngle(vec[9]);
     }
+    camera->Modified();
+    renderWindow->Render();
 
 //    prefsGUI.LoadState(settings);
 //    ui->action_Load_Recent_on_Startup->setChecked(prefsGUI.LoadLastScene);
@@ -181,7 +198,9 @@ void MainWindow::on_action_simulation_single_step_triggered()
 
 void MainWindow::on_action_camera_reset_triggered()
 {
+    qDebug() << "MainWindow::on_action_camera_reset_triggered()";
     vtkCamera* camera = renderer->GetActiveCamera();
+    camera->ParallelProjectionOn();
     camera->SetClippingRange(1e1,1e3);
     camera->SetFocalPoint(0.0, 0.0, 0.0);
     camera->SetPosition(0.0, 0.0, 50.0);
@@ -222,6 +241,7 @@ void MainWindow::comboboxIndexChanged_visualizations(int index)
 }
 
 
+// callback functions
 
 void MainWindow::PickCallbackFunction(vtkObject* caller,
                           long unsigned int vtkNotUsed(eventId),
@@ -230,16 +250,31 @@ void MainWindow::PickCallbackFunction(vtkObject* caller,
 {
     vtkPointPicker* pp = static_cast<vtkPointPicker*>(caller);
     MainWindow *mw = (MainWindow*)clientData;
+
+    vtkIdType id = pp->GetPointId();
+    qDebug() << "pointpicker vtkCommand::EndPickEvent " << id;
+    std::cout << "pointpicker" <<std::endl;
+
     /*
     mw->controller.model.floes_vtk.UnsafeUpdateSelection(mw->controller.model.floes.nodes.get(),
                                                      pp->GetPointId());
-
     mw->renderWindow->Render();
     */
 }
 
 
+void MainWindow::SelectionChangedCallbackFunction ( vtkObject* vtkNotUsed(caller),
+  long unsigned int vtkNotUsed(eventId), void* vtkNotUsed(clientData), void* callData )
+{
+  unsigned int* rect = reinterpret_cast<unsigned int*> ( callData );
+  unsigned int pos1X = rect[0];
+  unsigned int pos1Y = rect[1];
+  unsigned int pos2X = rect[2];
+  unsigned int pos2Y = rect[3];
 
+  std::cout << "vtkCommand::SelectionChangedEvent " << "Start x: " << pos1X << " Start y: " << pos1Y
+            << " End x: " << pos2X << " End y: " << pos2Y << std::endl;
+}
 
 
 

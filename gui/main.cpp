@@ -60,10 +60,10 @@ int main(int argc, char *argv[])
     parser.process(a);
 
     QSurfaceFormat fmt = QVTKOpenGLNativeWidget::defaultFormat();
-//    fmt.setAlphaBufferSize(0);
     QSurfaceFormat::setDefaultFormat(fmt);
 
     MainWindow w;
-    w.showMaximized();
+    w.show();
+//    w.showMaximized();
     return a.exec();
 }

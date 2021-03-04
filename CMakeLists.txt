@@ -93,6 +93,9 @@ add_executable(fl4
     simulation/equationofmotionsolver.cpp
     simulation/equationofmotionsolver.h
 
+    gui/interactor/SpecialSelector2D.cpp
+    gui/interactor/SpecialSelector2D.h
+
 #[[
     geometry/edge.cpp
     geometry/edge.h
@@ -120,6 +123,7 @@ add_executable(fl4
 
 target_include_directories(fl4 PUBLIC gui geometry simulation gui/propertybrowser)
 target_include_directories(fl4 PUBLIC gui gui/objectpropertybrowser gui/windows)
+target_include_directories(fl4 PUBLIC gui gui/interactor)
 
 # some paths need to be set manually
 target_include_directories(fl4 PUBLIC /home/s2/Projects-libraries/eigen)

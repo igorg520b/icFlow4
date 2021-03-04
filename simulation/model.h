@@ -39,6 +39,7 @@
 #include <vtkCellCenters.h>
 #include <vtkGlyph3D.h>
 #include <vtkArrowSource.h>
+#include <vtkVertexGlyphFilter.h>
 
 #include "parameters_sim.h"
 #include "mesh.h"
@@ -67,6 +68,7 @@ public:
     icy::Mesh mesh;
 
     vtkNew<vtkActor> actor_mesh;
+    vtkNew<vtkActor> actor_selected_nodes;
 
 private:
     //    icy::LinearSystem ls;
@@ -83,6 +85,13 @@ private:
     vtkNew<vtkCellArray> cellArray;
     vtkNew<vtkDataSetMapper> dataSetMapper;
 
+    vtkNew<vtkVertexGlyphFilter> glyph_filter;
+    vtkNew<vtkPolyDataMapper> glyph_mapper;
+    vtkNew<vtkPolyData> poly_data;
+    vtkNew<vtkIntArray> glyph_int_data;
+    vtkNew<vtkLookupTable> glyph_hueLut;
+
+
     // visualizing variables
     vtkNew<vtkDoubleArray> visualized_values;
     vtkIdType selectedPointId = -1;
@@ -96,6 +105,14 @@ signals:
     void propertyChanged();
 
 private:
+    static constexpr float lutArrayBands[6][3] =
+{{0.684154, 0.875059, 0.95523},
+    {0.882734, 0.823682,0.375036},
+    {0.601724, 0.748252, 0.492262},
+    {0.745543, 0.423584, 0.52455},
+    {0.756931, 0.53206, 0.359658},
+    {0.384161, 0.395036, 0.599407} };
+
     static constexpr float lutArrayTerrain[51][3] =
     {{0.54938, 0.772213, 0.848103},
      {0.54349, 0.751689, 0.811536},

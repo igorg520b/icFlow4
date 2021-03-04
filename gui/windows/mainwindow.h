@@ -60,6 +60,9 @@
 #include <vtkPNGWriter.h>
 #include <vtkJPEGWriter.h>
 
+#include <vtkInteractorStyleRubberBand2D.h>
+#include "SpecialSelector2D.h"
+
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -96,6 +99,10 @@ public:
                               long unsigned int vtkNotUsed(eventId),
                               void* vtkNotUsed(clientData),
                               void* vtkNotUsed(callData));
+
+    static void SelectionChangedCallbackFunction ( vtkObject* vtkNotUsed(caller),
+      long unsigned int vtkNotUsed(eventId), void* vtkNotUsed(clientData), void* callData );
+
 
 
 private slots:
@@ -139,6 +146,8 @@ private:
     vtkNew<vtkRenderer> renderer;
     vtkNew<vtkNamedColors> colors;
     vtkNew<vtkPointPicker> pointPicker;
+    vtkNew<vtkInteractorStyleRubberBand2D> interactorStyleRB2D;
+    vtkNew<SpecialSelector2D> specialSelector2D;
 
     const QString wtitle = "icFlow4: Finite Element Simulation";
 
