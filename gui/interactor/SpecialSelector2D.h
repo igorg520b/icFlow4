@@ -43,6 +43,8 @@ public:
   void OnMouseWheelForward() override;
   void OnMouseWheelBackward() override;
 */
+private:
+    bool mouse_remained_stationary = false;
 
 };
 

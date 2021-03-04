@@ -93,8 +93,8 @@ void icy::Model::UnsafeUpdateGeometry()
     for(int i=0;i<mesh.nodes.size();i++)
     {
         int value = 0;
-        if(mesh.nodes[i].pinned) value = 1;
-        else if(mesh.nodes[i].selected) value = 2;
+        if(mesh.nodes[i].pinned)
+            value = mesh.nodes[i].selected ? 2 : 1;
         glyph_int_data->SetValue(i,value);
     }
     glyph_hueLut->SetTableRange(-0.5,5.5);

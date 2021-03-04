@@ -38,71 +38,160 @@ vtkStandardNewMacro(SpecialSelector2D);
 
 void SpecialSelector2D::OnLeftButtonDown()
 {
+    this->FindPokedRenderer(this->StartPosition[0], this->StartPosition[1]);
+
+    if(this->Interaction != NONE) return;
+    this->Interaction = SELECTING; // this stands for selecting or moving
+    // record mouse position
+    this->StartPosition[0] = this->Interactor->GetEventPosition()[0];
+    this->StartPosition[1] = this->Interactor->GetEventPosition()[1];
+
+    // set "mouse_remained_statinary" flag
+    mouse_remained_stationary = true;
+
     std::cout << "SpecialSelector2D::OnLeftButtonDown()" << std::endl;
-    vtkInteractorStyleRubberBand2D::OnLeftButtonDown();
+//    vtkInteractorStyleRubberBand2D::OnLeftButtonDown();
 }
 
 void SpecialSelector2D::OnLeftButtonUp()
 {
-    std::cout << "SpecialSelector2D::OnLeftButtonUp()" << std::endl;
-    vtkInteractorStyleRubberBand2D::OnLeftButtonUp();
+    if(this->Interaction != SELECTING) return;
+    this->Interaction = NONE;
+    // if "mouse_remained_statinary", then toggle point selection
+    if(mouse_remained_stationary)
+    {
+        std::cout << "SpecialSelector2D::OnLeftButtonUp() mouse_remained_stationary" << std::endl;
+        vtkPointPicker *pp = dynamic_cast<vtkPointPicker*>(this->Interactor->GetPicker());
+
+        int result = pp->Pick(this->Interactor->GetEventPosition()[0],
+                this->Interactor->GetEventPosition()[1],
+                0,
+                this->Interactor->GetRenderWindow()->GetRenderers()->GetFirstRenderer());
+
+        vtkIdType id = pp->GetPointId();
+        if(result == 0 || id<0) {
+            std::cout << "SpecialSelector2D::OnLeftButtonUp() nothing selected" << std::endl;
+            return;
+        }
+
+        mw->modelController.model.mesh.nodes[id].selected = !mw->modelController.model.mesh.nodes[id].selected;
+        if(mw->modelController.model.mesh.nodes[id].selected)
+            mw->modelController.model.mesh.nodes[id].pinned = true;
+        mw->modelController.model.UnsafeUpdateGeometry();
+        this->GetInteractor()->Render();
+//        mw->renderWindow->Render();
+    }
+
+//    vtkInteractorStyleRubberBand2D::OnLeftButtonUp();
+}
+
+void SpecialSelector2D::OnMouseMove()
+{
+    mouse_remained_stationary = false;
+//    std::cout << "SpecialSelector2D::OnMouseMove()" << std::endl;
+
+    if(this->Interaction == SELECTING)
+    {
+        std::cout << "SpecialSelector2D::OnMouseMove()  this->Interaction == SELECTING" << std::endl;
+
+        vtkRenderWindowInteractor* rwi = this->GetInteractor();
+        int lastPt[] = { 0, 0 };
+        rwi->GetLastEventPosition(lastPt);
+        int curPt[] = { 0, 0 };
+        rwi->GetEventPosition(curPt);
+
+        std::cout << "SpecialSelector2D::OnMouseMove()  position" << std::endl;
+
+        if(this->CurrentRenderer == nullptr) std::cout << "CurrentRenderer is nullptr" << std::endl;
+
+        vtkCamera* camera = this->CurrentRenderer->GetActiveCamera();
+        std::cout << "SpecialSelector2D::OnMouseMove()  camera1" << std::endl;
+        if(camera == nullptr)  std::cout << "SpecialSelector2D::OnMouseMove() camera is null" << std::endl;
+        else std::cout << "SpecialSelector2D::OnMouseMove() camera is not null" << std::endl;
+
+        vtkRenderer* renderer = this->CurrentRenderer;
+
+        double camera_parallelScale = camera->GetParallelScale();
+        std::cout << "SpecialSelector2D::OnMouseMove() parallelScale" << std::endl;
+
+        int* renderer_getSize = renderer->GetSize();
+        std::cout << "SpecialSelector2D::OnMouseMove() renderer_getSize" << std::endl;
+
+        int renderer_getSize1 = renderer_getSize[1];
+
+        double lastScale = 2.0 *  camera_parallelScale / renderer_getSize1;
+
+         std::cout << "SpecialSelector2D::OnMouseMove() step1" << std::endl;
+
+        double lastFocalPt[] = { 0, 0, 0 };
+        camera->GetFocalPoint(lastFocalPt);
+        double lastPos[] = { 0, 0, 0 };
+        camera->GetPosition(lastPos);
+
+        std::cout << "SpecialSelector2D::OnMouseMove()  camera" << std::endl;
+
+        double delta[] = { 0, 0, 0 };
+          delta[0] = -lastScale * (curPt[0] - lastPt[0]);
+          delta[1] = -lastScale * (curPt[1] - lastPt[1]);
+          delta[2] = 0;
+
+          std::cout << "SpecialSelector2D::OnMouseMove()  for loop" << std::endl;
+          for(icy::Node &nd : mw->modelController.model.mesh.nodes)
+          {
+              if(!nd.selected) continue;
+              nd.xn.x() -= delta[0];
+              nd.xn.y() -= delta[1];
+              nd.xt = nd.xn;
+          }
+
+//          camera->SetFocalPoint(
+//            lastFocalPt[0] + delta[0], lastFocalPt[1] + delta[1], lastFocalPt[2] + delta[2]);
+//          camera->SetPosition(lastPos[0] + delta[0], lastPos[1] + delta[1], lastPos[2] + delta[2]);
+//          this->InvokeEvent(vtkCommand::InteractionEvent);
+          std::cout << "SpecialSelector2D::OnMouseMove()  updating geometry" << std::endl;
+
+          mw->modelController.model.UnsafeUpdateGeometry();
+
+          rwi->Render();
+          std::cout << "SpecialSelector2D::OnMouseMove()  done" << std::endl;
+        return;
+    }
+
+    // unset "mouse_remained_statinary" flag
+
+    // if LMB (see base source), then drag selection
+
+    // otherwise call base
+
+//    std::cout << "SpecialSelector2D::OnMouseMove()" << std::endl;
+    vtkInteractorStyleRubberBand2D::OnMouseMove();
 }
 
 
 void SpecialSelector2D::OnRightButtonDown()
 {
-    std::cout << "SpecialSelector2D::OnRightButtonDown()" << std::endl;
     //vtkPointPicker
-    vtkAbstractPicker* picker = this->Interactor->GetPicker();
-    vtkPointPicker *pp = dynamic_cast<vtkPointPicker*>(picker);
+    vtkPointPicker *pp = dynamic_cast<vtkPointPicker*>(this->Interactor->GetPicker());
 
     int result = pp->Pick(this->Interactor->GetEventPosition()[0],
             this->Interactor->GetEventPosition()[1],
             0,
             this->Interactor->GetRenderWindow()->GetRenderers()->GetFirstRenderer());
 
-    if(result==0) {
-        std::cout << "SpecialSelector2D::OnRightButtonDown() nothing picked1" << std::endl;
-        return;
-    }
-
     vtkIdType id = pp->GetPointId();
-    if(id<0) {
-        std::cout << "SpecialSelector2D::OnRightButtonDown() nothing picked2" << std::endl;
-        return;
-    }
-    std::cout << "SpecialSelector2D::OnRightButtonDown() " << id << std::endl;
+    if(result == 0 || id<0) return;
 
     mw->modelController.model.mesh.nodes[id].pinned = !mw->modelController.model.mesh.nodes[id].pinned;
+    if(mw->modelController.model.mesh.nodes[id].pinned == false)
+        mw->modelController.model.mesh.nodes[id].selected = false;
     mw->modelController.model.UnsafeUpdateGeometry();
-    mw->renderWindow->Render();
-
-    /*
-      std::cout << "Picking pixel: " << this->Interactor->GetEventPosition()[0] << " " << this->Interactor->GetEventPosition()[1] << std::endl;
-      this->Interactor->GetPicker()->Pick(this->Interactor->GetEventPosition()[0],
-                         this->Interactor->GetEventPosition()[1],
-                         0,  // always zero.
-                         this->Interactor->GetRenderWindow()->GetRenderers()->GetFirstRenderer());
-      double picked[3];
-      this->Interactor->GetPicker()->GetPickPosition(picked);
-      std::cout << "Picked value: " << picked[0] << " " << picked[1] << " " << picked[2] << std::endl;
-*/
-
-//    vtkInteractorStyleRubberBand2D::OnRightButtonDown();
+    this->GetInteractor()->Render();
+//    mw->renderWindow->Render();
 }
 
-void SpecialSelector2D::OnRightButtonUp()
-{
-    std::cout << "SpecialSelector2D::OnRightButtonUp())" << std::endl;
-//    vtkInteractorStyleRubberBand2D::OnRightButtonUp();
-}
+void SpecialSelector2D::OnRightButtonUp() { }
 
 
-void SpecialSelector2D::OnMouseMove()
-{
-    std::cout << "SpecialSelector2D::OnMouseMove()" << std::endl;
-    vtkInteractorStyleRubberBand2D::OnMouseMove();
-}
 
 
 /*
