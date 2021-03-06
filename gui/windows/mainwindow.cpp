@@ -217,15 +217,11 @@ void MainWindow::updateGUI()
 
 void MainWindow::comboboxIndexChanged_visualizations(int index)
 {
-    /*
-    controller.model.floes_vtk.UnsafeUpdateValues(controller.model.floes.nodes.get(),
-                                                  controller.model.floes.elems.get(),
-                                                  controller.prms.temporal_attenuation,
-                                                  (icy::FloeVisualization::VisOpt)index);
-    prefsGUI.VisualizationOption = index;
+    qDebug() << "comboboxIndexChanged_visualizations " << index;
+    modelController.model.ChangeVisualizationOption((icy::Model::VisOpt)index);
     renderWindow->Render();
-    scalarBar->SetVisibility(prefsGUI.ShowScalarBar && prefsGUI.VisualizationOption!=0);
-*/
+
+//    scalarBar->SetVisibility(prefsGUI.ShowScalarBar && prefsGUI.VisualizationOption!=0);
 }
 
 

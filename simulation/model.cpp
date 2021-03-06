@@ -35,7 +35,6 @@ icy::Model::Model()
             glyph_hueLut->SetTableValue(i, (double)lutArrayBands[i][0], (double)lutArrayBands[i][1], (double)lutArrayBands[i][2], 1.0);
 
 
-    actor_selected_nodes->GetProperty()->SetPointSize(5);
     poly_data->SetPoints(points);
     glyph_filter->SetInputData(poly_data);
     glyph_mapper->SetInputConnection(glyph_filter->GetOutputPort());
@@ -44,6 +43,7 @@ icy::Model::Model()
 
     actor_selected_nodes->SetMapper(glyph_mapper);
     actor_selected_nodes->GetProperty()->SetColor(0.1, 0.1, 0.1);
+    actor_selected_nodes->GetProperty()->SetPointSize(5);
     glyph_int_data->SetName("glyph_int_data");
 
 
@@ -112,10 +112,56 @@ void icy::Model::UnsafeUpdateGeometry()
 
 void icy::Model::ChangeVisualizationOption(VisOpt option)
 {
+    qDebug() << "icy::Model::ChangeVisualizationOption " << option;
+    if(VisualizingVariable == option) return; // option did not change
+    VisualizingVariable = option;
 
+
+    if(VisualizingVariable == VisOpt::elem_area)
+    {
+        ugrid->GetPointData()->RemoveArray("visualized_values");
+        ugrid->GetCellData()->AddArray(visualized_values);
+        ugrid->GetCellData()->SetActiveScalars("visualized_values");
+        dataSetMapper->SetScalarModeToUseCellData();
+        dataSetMapper->ScalarVisibilityOn();
+    }
+    else
+    {
+        dataSetMapper->ScalarVisibilityOff();
+        ugrid->GetPointData()->RemoveArray("visualized_values");
+        ugrid->GetCellData()->RemoveArray("visualized_values");
+        return;
+    }
+
+
+    UpdateValues();
 
 }
 
+void icy::Model::UpdateValues()
+{
+    if(mesh.nodes.size()==0)
+    {
+        dataSetMapper->ScalarVisibilityOff();
+        ugrid->GetPointData()->RemoveArray("visualized_values");
+        ugrid->GetCellData()->RemoveArray("visualized_values");
+        return;
+    }
+
+    switch(VisualizingVariable)
+    {
+        case elem_area:
+        visualized_values->SetNumberOfValues(mesh.elems.size());
+        for(size_t i=0;i<mesh.elems.size();i++) visualized_values->SetValue(i, mesh.elems[i].area_initial);
+        break;
+    }
+
+    visualized_values->Modified();
+
+    double minmax[2];
+    visualized_values->GetValueRange(minmax);
+    hueLut->SetTableRange(minmax[0], minmax[1]);
+}
 
 
 void icy::Model::InitializeLUT(int table=1)
@@ -128,6 +174,17 @@ void icy::Model::InitializeLUT(int table=1)
             hueLut->SetTableValue(i, (double)lutArrayTerrain[i][0],
                     (double)lutArrayTerrain[i][1],
                     (double)lutArrayTerrain[i][2], 1.0);
+}
+
+void icy::Model::InitialGuess(double timeStep)
+{
+    std::size_t nNodes = mesh.nodes.size();
+#pragma omp parallel for
+    for(std::size_t i=0;i<nNodes;i++)
+    {
+        icy::Node &nd = mesh.nodes[i];
+        nd.xt = nd.xn + nd.vn*timeStep;
+    }
 }
 
 

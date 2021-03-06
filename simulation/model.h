@@ -53,16 +53,18 @@ class icy::Model : public QObject
 public:    
 
     // visualization options
-    enum VisOpt { none, energy_density };
+    enum VisOpt { none, elem_area, energy_density };
     Q_ENUM(VisOpt)
 
     Model();
     void Reset(SimParams &prms);
 
+    void InitialGuess(double timeStep);
     void AssembleAndSolve(SimParams &prms, double timeStep);
     void GetResultFromSolver(double timeStep);
     void AcceptTentativeValues(SimParams &prms);
     void UnsafeUpdateGeometry();    // called from the main thread
+    void UpdateValues();
     void ChangeVisualizationOption(VisOpt option);  // called from the main thread
 
     icy::Mesh mesh;

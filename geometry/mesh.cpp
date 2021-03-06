@@ -100,6 +100,16 @@ void icy::Mesh::Reset(double CharacteristicLengthMax)
     {
         icy::Element &elem = elems[i];
         for(int j=0;j<3;j++) elem.nds[j] = &(nodes[mtags[nodeTagsInTris[i*3+j]]]);
+        elem.PrecomputeInitialArea();
+        if(elem.area_initial == 0) throw std::runtime_error("icy::Mesh::Reset - element's area is zero");
+        if(elem.area_initial < 0)
+        {
+            for(int j=0;j<3;j++) elem.nds[2-j] = &(nodes[mtags[nodeTagsInTris[i*3+j]]]);
+            elem.PrecomputeInitialArea();
+            if(elem.area_initial < 0) throw std::runtime_error("icy::Mesh::Reset - error");
+        }
+        for(int j=0;j<3;j++) elem.nds[j]->area += elem.area_initial/3;
+
     }
 }
 

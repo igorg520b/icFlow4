@@ -21,6 +21,15 @@ void icy::Element::Reset(void)
     area_initial = 0;
 }
 
+void icy::Element::PrecomputeInitialArea()
+{
+    Eigen::Matrix2d J;
+    J << nds[0]->x_initial.x()-nds[2]->x_initial.x(), nds[1]->x_initial.x()-nds[2]->x_initial.x(),
+            nds[0]->x_initial.y()-nds[2]->x_initial.y(), nds[1]->x_initial.y()-nds[2]->x_initial.y();
+    area_initial = J.determinant()/2;
+}
+
+
 /*
 void icy::Element::UpdateSparseSystemEntries(LinearSystem &ls)
 {

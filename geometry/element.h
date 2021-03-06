@@ -22,6 +22,7 @@ public:
 
     // at initial state
     double area_initial;
+    void PrecomputeInitialArea();
 
     /*
     void UpdateSparseSystemEntries(LinearSystem &ls);

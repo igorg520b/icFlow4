@@ -63,7 +63,7 @@ int main(int argc, char *argv[])
     QSurfaceFormat::setDefaultFormat(fmt);
 
     MainWindow w;
-    w.show();
-//    w.showMaximized();
+//    w.show();
+    w.showMaximized();
     return a.exec();
 }

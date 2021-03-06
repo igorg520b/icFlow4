@@ -18,6 +18,15 @@ bool icy::ModelController::Step(void)
 {
     currentStep++;
     std::cout << "ModelControllerTest::Step " << currentStep << std::endl;
+
+    double h = prms.InitialTimeStep; // time step
+    model.InitialGuess(h);
+    for(int i=0;i<3;i++)
+    {
+        model.AssembleAndSolve(prms, h);
+    }
+
+    /*
     for(int i=0;i<30;i++) {
         if(!abortRequested) {
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -28,8 +37,12 @@ bool icy::ModelController::Step(void)
             break;
         }
     }
+    */
+
+
+
     emit stepCompleted();
-    return(currentStep < 30);
+    return(currentStep < prms.MaxSteps);
 }
 
 void icy::ModelController::RequestAbort(void)

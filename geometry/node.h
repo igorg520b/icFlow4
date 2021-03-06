@@ -21,7 +21,7 @@ public:
     Node();
     void Reset();
 
-    int id;          // sequential number in a given floe
+    int id, eqId;       // sequential number of a node; identificator in the equation of motion (if not pinned)
     bool pinned = false;
     bool selected = false;
     double area;        // area that the node "represents", for applying various forces
