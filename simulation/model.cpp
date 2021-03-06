@@ -86,11 +86,9 @@ void icy::Model::UnsafeUpdateGeometry()
     }
     ugrid->SetCells(VTK_TRIANGLE, cellArray);
 
-//    glyph_mapper->Modified();
     glyph_int_data->SetNumberOfValues(mesh.nodes.size());
 
-    //for testing
-    for(int i=0;i<mesh.nodes.size();i++)
+    for(std::size_t i=0;i<mesh.nodes.size();i++)
     {
         int value = 0;
         if(mesh.nodes[i].pinned)
@@ -102,11 +100,6 @@ void icy::Model::UnsafeUpdateGeometry()
     glyph_mapper->SetScalarModeToUsePointData();
     poly_data->GetPointData()->AddArray(glyph_int_data);
     poly_data->GetPointData()->SetActiveScalars("glyph_int_data");
-//    ugrid->GetPointData()->AddArray(visualized_values);
-//            ugrid->GetPointData()->SetActiveScalars("visualized_values");
-//            dataSetMapper->SetScalarModeToUsePointData();
-
-    // if(selectedPointId >= 0) UnsafeUpdateSelection(nodes, -1);
 }
 
 
@@ -148,13 +141,17 @@ void icy::Model::UpdateValues()
         return;
     }
 
+    vtk_update_mutex.lock();
     switch(VisualizingVariable)
     {
         case elem_area:
         visualized_values->SetNumberOfValues(mesh.elems.size());
         for(size_t i=0;i<mesh.elems.size();i++) visualized_values->SetValue(i, mesh.elems[i].area_initial);
         break;
+    default:
+        break;
     }
+    vtk_update_mutex.unlock();
 
     visualized_values->Modified();
 
@@ -183,13 +180,44 @@ void icy::Model::InitialGuess(double timeStep)
     for(std::size_t i=0;i<nNodes;i++)
     {
         icy::Node &nd = mesh.nodes[i];
+        if(nd.pinned) continue;
         nd.xt = nd.xn + nd.vn*timeStep;
     }
+
+    freeNodeCount = 0;
+    for(icy::Node &nd : mesh.nodes)
+    {
+        if(nd.pinned) nd.eqId = -1;
+        else nd.eqId = freeNodeCount++;
+    }
+
 }
 
 
-void icy::Model::AssembleAndSolve(SimParams &prms, double timeStep) {}
+void icy::Model::AssembleAndSolve(SimParams &prms, double timeStep)
+{
+    eqOfMotion.ClearAndResize(freeNodeCount);
+}
 
-void icy::Model::GetResultFromSolver(double timeStep) {}
+void icy::Model::GetResultFromSolver(double timeStep)
+{
 
-void icy::Model::AcceptTentativeValues(SimParams &prms) {}
+}
+
+void icy::Model::AcceptTentativeValues(double timeStep)
+{
+    vtk_update_mutex.lock();
+    std::size_t nNodes = mesh.nodes.size();
+#pragma omp parallel for
+    for(std::size_t i=0;i<nNodes;i++)
+    {
+        icy::Node &nd = mesh.nodes[i];
+        if(nd.pinned) continue;
+        Eigen::Vector2d dx = nd.xt-nd.xn;
+        nd.xn = nd.xt;
+        nd.vn = dx/timeStep;
+        // nd.xn.x() += 0.001; // for testing
+
+    }
+    vtk_update_mutex.unlock();
+}

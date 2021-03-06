@@ -172,7 +172,7 @@ void MainWindow::background_worker_paused()
 
 void MainWindow::render_results()
 {
-//    controller.model.UnsafeUpdateGeometry(controller.ts.SimulationTime, controller.prms);
+    modelController.model.UnsafeUpdateGeometry();
     renderWindow->Render();
 }
 
@@ -201,7 +201,6 @@ void MainWindow::on_action_camera_reset_triggered()
 
 void MainWindow::updateGUI()
 {
-
     bool r = worker->running;
     ui->action_simulation_single_step->setEnabled(!r);
 
@@ -210,6 +209,7 @@ void MainWindow::updateGUI()
 
     //    statusLabel->setText(r ? "running" : "paused");
 //    if(!r) ui->action_simulation_start->setEnabled(true);
+    render_results();
 
 }
 

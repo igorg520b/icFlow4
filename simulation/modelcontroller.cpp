@@ -23,8 +23,11 @@ bool icy::ModelController::Step(void)
     model.InitialGuess(h);
     for(int i=0;i<3;i++)
     {
+        if(abortRequested) {Aborting(); return false;}
         model.AssembleAndSolve(prms, h);
     }
+    model.AcceptTentativeValues(h);
+//    std::this_thread::sleep_for(std::chrono::milliseconds(1));    // for testing
 
     /*
     for(int i=0;i<30;i++) {

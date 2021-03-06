@@ -43,6 +43,7 @@
 
 #include "parameters_sim.h"
 #include "mesh.h"
+#include "equationofmotionsolver.h"
 
 namespace icy { class Model; class Node; class Element;}
 
@@ -61,8 +62,7 @@ public:
 
     void InitialGuess(double timeStep);
     void AssembleAndSolve(SimParams &prms, double timeStep);
-    void GetResultFromSolver(double timeStep);
-    void AcceptTentativeValues(SimParams &prms);
+    void AcceptTentativeValues(double timeStep);
     void UnsafeUpdateGeometry();    // called from the main thread
     void UpdateValues();
     void ChangeVisualizationOption(VisOpt option);  // called from the main thread
@@ -73,8 +73,9 @@ public:
     vtkNew<vtkActor> actor_selected_nodes;
 
 private:
-    //    icy::LinearSystem ls;
-//    QMutex vtk_update_mutex; // to prevent modifying mesh data while updating VTK representation
+    EquationOfMotionSolver eqOfMotion;
+
+    QMutex vtk_update_mutex; // to prevent modifying mesh data while updating VTK representation
     bool vtk_update_requested = false;  // true when signal has been already emitted to update vtk geometry
     VisOpt VisualizingVariable = VisOpt::none;
 
@@ -99,6 +100,9 @@ private:
     vtkIdType selectedPointId = -1;
 
     void InitializeLUT(int table);
+    void GetResultFromSolver(double timeStep);
+
+    std::size_t freeNodeCount=-1;
 
 
 
