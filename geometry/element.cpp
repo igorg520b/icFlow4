@@ -30,6 +30,18 @@ void icy::Element::PrecomputeInitialArea()
 }
 
 
+void icy::Element::AddToSparsityStructure(EquationOfMotionSolver &eq)
+{
+
+}
+
+
+void icy::Element::ComputeEquationEntries(EquationOfMotionSolver &eq, SimParams &prms, double timeStep)
+{
+
+}
+
+
 /*
 void icy::Element::UpdateSparseSystemEntries(LinearSystem &ls)
 {

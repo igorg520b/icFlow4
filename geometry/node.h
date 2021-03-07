@@ -2,16 +2,18 @@
 #ifndef NODE_H
 #define NODE_H
 
-#include <vector>
-#include <algorithm>
-#include <map>
-#include <unordered_map>
-#include <cmath>
-#include <Eigen/Core>
-//#include "edge.h"
-
 #include <concurrent_vector.h>
-#include <concurrent_unordered_map.h>
+//#include <concurrent_unordered_map.h>
+
+//#include <vector>
+//#include <algorithm>
+//#include <map>
+//#include <unordered_map>
+//#include <cmath>
+#include <Eigen/Core>
+
+#include "equationofmotionsolver.h"
+#include "parameters_sim.h"
 
 namespace icy { class Node; }
 
@@ -31,6 +33,8 @@ public:
     Eigen::Vector2d x_initial;  // initial configuration
     Eigen::Vector2d xn, vn;     // position and velocity at step n
     Eigen::Vector2d xt;         // at step n+1
+
+    void ComputeEquationEntries(EquationOfMotionSolver &eq, SimParams &prms, double timeStep);
 
 };
 

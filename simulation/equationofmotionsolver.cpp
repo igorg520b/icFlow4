@@ -71,7 +71,7 @@ void EquationOfMotionSolver::TestSolve()
 
 }
 
-void EquationOfMotionSolver::AdjustCurrentGuess(int idx, Eigen::Vector2d &vec)
+void EquationOfMotionSolver::GetTentativeResult(int idx, Eigen::Vector2d &vec)
 {
 
 }

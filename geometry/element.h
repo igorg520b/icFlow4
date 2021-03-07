@@ -1,13 +1,12 @@
 #ifndef ELEMENT123_H
 #define ELEMENT123_H
 
-
-
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
-//#include "parameters_sim.h"
+#include "parameters_sim.h"
 #include "node.h"
+#include "equationofmotionsolver.h"
 
 namespace icy { class Element; class Node; }
 
@@ -24,20 +23,8 @@ public:
     double area_initial;
     void PrecomputeInitialArea();
 
-    /*
-    void UpdateSparseSystemEntries(LinearSystem &ls);
-    void ComputeElasticForce(LinearSystem &ls, SimParams &prms, double timeStep,
-                             Eigen::Matrix3d &elasticityMatrix,
-                             Eigen::Matrix2d &D_mats);
-
-    void ComputeMatrices(SimParams &prms,
-                         Eigen::Matrix3d &elasticityMatrix,
-                         Eigen::Matrix2d &D_mats,
-                         Eigen::Matrix<double,3,DOFS*3> &bmat_b,
-                         Eigen::Matrix<double,2,DOFS*3> (&bmat_s)[3],
-                         Eigen::Matrix<double,3,DOFS*3> &bmat_m,
-                         Eigen::Matrix<double,DOFS*3,DOFS*3> &K);
-*/
+    void AddToSparsityStructure(EquationOfMotionSolver &eq);
+    void ComputeEquationEntries(EquationOfMotionSolver &eq, SimParams &prms, double timeStep);
 
 };
 

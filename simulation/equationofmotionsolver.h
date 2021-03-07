@@ -29,7 +29,7 @@ public:
     void Solve();
     void TestSolve(); // test solve using sample data
 
-    void AdjustCurrentGuess(int idx, Eigen::Vector2d &vec);  // solution => convenient vector form
+    void GetTentativeResult(int idx, Eigen::Vector2d &vec);  // solution => convenient vector form
 
 
 private:

@@ -1,6 +1,6 @@
-#include <cmath>
-#include <cfloat>
-#include <algorithm>
+//#include <cmath>
+//#include <cfloat>
+//#include <algorithm>
 #include "node.h"
 //#include "model.h"
 //#include "parameters_sim.h"
@@ -21,4 +21,8 @@ void icy::Node::Reset()
     //    adjacent_elems.clear();
 }
 
+void icy::Node::ComputeEquationEntries(EquationOfMotionSolver &eq, SimParams &prms, double timeStep)
+{
+
+}
 

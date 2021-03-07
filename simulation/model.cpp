@@ -197,6 +197,32 @@ void icy::Model::InitialGuess(double timeStep)
 void icy::Model::AssembleAndSolve(SimParams &prms, double timeStep)
 {
     eqOfMotion.ClearAndResize(freeNodeCount);
+
+    std::size_t nElems = mesh.elems.size();
+    std::size_t nNodes = mesh.nodes.size();
+
+#pragma omp parallel for
+    for(std::size_t i=0;i<nElems;i++) mesh.elems[i].AddToSparsityStructure(eqOfMotion);
+
+    eqOfMotion.CreateStructure();
+
+    // assemble
+#pragma omp parallel for
+    for(std::size_t i=0;i<nElems;i++) mesh.elems[i].ComputeEquationEntries(eqOfMotion, prms, timeStep);
+
+#pragma omp parallel for
+    for(std::size_t i=0;i<nNodes;i++) mesh.nodes[i].ComputeEquationEntries(eqOfMotion, prms, timeStep);
+
+    // solve
+    eqOfMotion.Solve();
+
+    // pull
+#pragma omp parallel for
+    for(std::size_t i=0;i<nNodes;i++)
+    {
+        icy::Node &nd = mesh.nodes[i];
+        if(!nd.pinned) eqOfMotion.GetTentativeResult(nd.eqId, nd.xt);
+    }
 }
 
 void icy::Model::GetResultFromSolver(double timeStep)
@@ -217,7 +243,6 @@ void icy::Model::AcceptTentativeValues(double timeStep)
         nd.xn = nd.xt;
         nd.vn = dx/timeStep;
         // nd.xn.x() += 0.001; // for testing
-
     }
     vtk_update_mutex.unlock();
 }
