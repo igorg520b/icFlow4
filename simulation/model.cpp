@@ -225,11 +225,6 @@ void icy::Model::AssembleAndSolve(SimParams &prms, double timeStep)
     }
 }
 
-void icy::Model::GetResultFromSolver(double timeStep)
-{
-
-}
-
 void icy::Model::AcceptTentativeValues(double timeStep)
 {
     vtk_update_mutex.lock();

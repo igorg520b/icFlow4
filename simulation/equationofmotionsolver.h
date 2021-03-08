@@ -35,7 +35,6 @@ public:
 private:
     MSKenv_t     env  = NULL;
     MSKtask_t    task = NULL;
-    MSKrescodee  r;
 
     // nonzero values of the Q-matrix in the term 1/2 xt.Q.x; size is nnz*DOFs
     std::vector<MSKint32t> qosubi, qosubj;
@@ -47,11 +46,11 @@ private:
 
     MSKrealt cfix;    // constant term
 
-    int N;      // number of variables (divided by DOF)
-    int nnz;    // number of non-zero entries in Q (lower triangle)
+    unsigned N;      // number of variables (divided by DOF)
+    unsigned nnz;    // number of non-zero entries in Q (lower triangle)
 
-    std::vector<tbb::concurrent_vector<int>*> rows_Neighbors;
-    std::vector<std::vector<int>*> rows_pcsr;   // per row mappings between columns and offset in "values"
+    std::vector<tbb::concurrent_vector<unsigned>*> rows_Neighbors;
+    std::vector<std::vector<unsigned>*> rows_pcsr;   // per row mappings between columns and offset in "values"
 
     static void MSKAPI printstr(void *, const char str[]);
     void ResizeRows();

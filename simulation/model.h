@@ -100,7 +100,6 @@ private:
     vtkIdType selectedPointId = -1;
 
     void InitializeLUT(int table);
-    void GetResultFromSolver(double timeStep);
 
     std::size_t freeNodeCount=-1;
 
