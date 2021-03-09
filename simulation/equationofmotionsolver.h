@@ -34,7 +34,6 @@ public:
 
 private:
     MSKenv_t     env  = NULL;
-    MSKtask_t    task = NULL;
 
     // nonzero values of the Q-matrix in the term 1/2 xt.Q.x; size is nnz*DOFs
     std::vector<MSKint32t> qosubi, qosubj;
@@ -43,6 +42,7 @@ private:
     // linear term
     std::vector<MSKint32t> csubj;
     std::vector<MSKrealt> cval, sln;
+    MSKrealt objective_value;    // value of the optimized expression (should be zero)
 
     MSKrealt cfix;    // constant term
 

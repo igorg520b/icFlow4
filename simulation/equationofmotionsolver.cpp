@@ -9,20 +9,12 @@ EquationOfMotionSolver::EquationOfMotionSolver()
     r = MSK_makeenv(&env, NULL);
     if (r != MSK_RES_OK) throw std::runtime_error("makeenv");
 
-    constexpr int numvar = 10000, numcon = 0;
-    r = MSK_maketask(env, numcon, numvar, &task);
-    if (r != MSK_RES_OK) throw std::runtime_error("maketask");
-
-    r = MSK_linkfunctotaskstream(task, MSK_STREAM_LOG, NULL, printstr);
-    if (r != MSK_RES_OK) throw std::runtime_error("linkfunctotaskstream");
 }
 
 EquationOfMotionSolver::~EquationOfMotionSolver()
 {
     MSKrescodee  r;
 
-    r = MSK_deletetask(&task);
-    if (r != MSK_RES_OK) std::cout << "~EquationOfMotionSolver MSK_deletetask" << std::endl;
     r = MSK_deleteenv(&env);
     if (r != MSK_RES_OK) std::cout << "~EquationOfMotionSolver MSK_deleteenv" << std::endl;
 
@@ -50,6 +42,7 @@ void EquationOfMotionSolver::ClearAndResize(std::size_t N_)
 
     std::fill(cval.begin(), cval.begin()+N*DOFS, 0);
 
+
     while(rows_Neighbors.size()<N)
         rows_Neighbors.push_back(new tbb::concurrent_vector<unsigned>(10));
 
@@ -62,6 +55,8 @@ void EquationOfMotionSolver::ClearAndResize(std::size_t N_)
         rows_Neighbors[i]->clear();
         rows_Neighbors[i]->push_back(i);    // diagonal elements must be non-zero
         rows_pcsr[i]->clear(); // clear the mapping of (i,j)->offset
+        csubj[i*DOFS+0]=i*DOFS+0;
+        csubj[i*DOFS+1]=i*DOFS+1;
     }
 }
 
@@ -214,8 +209,55 @@ void EquationOfMotionSolver::AddToConstTerm(double c)
 void EquationOfMotionSolver::Solve()
 {
     MSKrescodee  r;
+    MSKtask_t    task = NULL;
+    r = MSK_maketask(env, 0, N*DOFS, &task);
+    if (r != MSK_RES_OK) throw std::runtime_error("maketask");
 
-    //MSK_putcfix
+    r = MSK_linkfunctotaskstream(task, MSK_STREAM_LOG, NULL, printstr);
+    if (r != MSK_RES_OK) throw std::runtime_error("linkfunctotaskstream");
+
+    int numvar = N*DOFS;
+    r = MSK_appendvars(task, numvar);
+     if (r != MSK_RES_OK) throw std::runtime_error("appendvars");
+
+     for (int j = 0; j < numvar; j++)
+     {
+         r = MSK_putvarbound(task, j, MSK_BK_FR, -MSK_DPAR_DATA_TOL_BOUND_INF, MSK_DPAR_DATA_TOL_BOUND_INF);
+         if (r != MSK_RES_OK) throw std::runtime_error("MSK_putvarbound");
+     }
+
+     r = MSK_putclist(task, numvar, csubj.data(), cval.data());
+     if (r != MSK_RES_OK) throw std::runtime_error("MSK_putclist");
+
+     r = MSK_putqobj(task, nnz, qosubi.data(), qosubj.data(), qoval.data());
+     if (r != MSK_RES_OK) throw std::runtime_error("MSK_putqobj");
+
+     r = MSK_putcfix(task, cfix);
+     if (r != MSK_RES_OK) throw std::runtime_error("MSK_putcfix");
+
+     r = MSK_putobjsense(task, MSK_OBJECTIVE_SENSE_MINIMIZE);
+     if (r != MSK_RES_OK) throw std::runtime_error("MSK_putobjsense");
+
+
+     MSKrescodee trmcode;
+
+     r = MSK_optimizetrm(task, &trmcode);
+     if (r != MSK_RES_OK) throw std::runtime_error("MSK_optimizetrm");
+
+//     MSK_solutionsummary(task, MSK_STREAM_LOG);
+
+     MSKsolstae solsta;
+     r = MSK_getsolsta(task, MSK_SOL_ITR, &solsta);
+     if (r != MSK_RES_OK) throw std::runtime_error("MSK_getsolsta result");
+     if (solsta != MSK_SOL_STA_OPTIMAL) throw std::runtime_error("solsta != MSK_SOL_STA_OPTIMAL");
+
+     MSK_getxx(task, MSK_SOL_ITR, sln.data());
+
+     MSK_getdualobj(task, MSK_SOL_ITR, &objective_value);
+     std::cout << "\nMSK_SOL_ITR sol = " << objective_value << std::endl;
+
+     r = MSK_deletetask(&task);
+     if (r != MSK_RES_OK) std::cout << "MSK_deletetask error" << std::endl;
 }
 
 
@@ -228,6 +270,15 @@ void EquationOfMotionSolver::GetTentativeResult(int idx, Eigen::Vector2d &vec)
 void EquationOfMotionSolver::TestSolve()
 {
     MSKrescodee  r;
+
+    MSKtask_t    task = NULL;
+    r = MSK_maketask(env, 0, 10000, &task);
+    if (r != MSK_RES_OK) throw std::runtime_error("maketask");
+
+//    r = MSK_linkfunctotaskstream(task, MSK_STREAM_LOG, NULL, printstr);
+//    if (r != MSK_RES_OK) throw std::runtime_error("linkfunctotaskstream");
+
+    // TASK1
 
     int numvar = 2;
     r = MSK_appendvars(task, numvar);
@@ -263,7 +314,7 @@ void EquationOfMotionSolver::TestSolve()
      r = MSK_optimizetrm(task, &trmcode);
      if (r != MSK_RES_OK) throw std::runtime_error("MSK_optimizetrm");
 
-     MSK_solutionsummary(task, MSK_STREAM_LOG);
+//     MSK_solutionsummary(task, MSK_STREAM_LOG);
 
      MSKsolstae solsta;
      r = MSK_getsolsta(task, MSK_SOL_ITR, &solsta);
@@ -273,11 +324,77 @@ void EquationOfMotionSolver::TestSolve()
      MSKrealt result[numvar];
      MSK_getxx(task, MSK_SOL_ITR, result);
 
-
      std::cout << "\nx0 = " << result[0];
      std::cout << "\nx1 = " << result[1] << std::endl;
 
      MSKrealt dualobj;
      MSK_getdualobj(task, MSK_SOL_ITR, &dualobj);
      std::cout << "\nMSK_SOL_ITR sol = " << dualobj << std::endl;
+
+     r = MSK_deletetask(&task);
+     if (r != MSK_RES_OK) std::cout << "MSK_deletetask error" << std::endl;
+
+
+
+
+
+     // TASK 2
+     r = MSK_maketask(env, 0, 10000, &task);
+     if (r != MSK_RES_OK) throw std::runtime_error("maketask");
+
+//     r = MSK_linkfunctotaskstream(task, MSK_STREAM_LOG, NULL, printstr);
+//     if (r != MSK_RES_OK) throw std::runtime_error("linkfunctotaskstream");
+
+     numvar = 3;
+     r = MSK_appendvars(task, numvar);
+      if (r != MSK_RES_OK) throw std::runtime_error("appendvars");
+
+     for (int j = 0; j < numvar; j++)
+     {
+         r = MSK_putvarbound(task, j, MSK_BK_FR, -MSK_DPAR_DATA_TOL_BOUND_INF, MSK_DPAR_DATA_TOL_BOUND_INF);
+         if (r != MSK_RES_OK) throw std::runtime_error("MSK_putvarbound");
+     }
+
+     const MSKint32t csubj2[] = {0,1,2};
+     const MSKrealt cval2[] = {5.0, -4.0, 7.0};
+     r = MSK_putclist(task, numvar, csubj2, cval2);
+     if (r != MSK_RES_OK) throw std::runtime_error("MSK_putclist");
+
+     const MSKint32t qosubi2[] = {0,   1,   2,   2,   2};
+     const MSKint32t qosubj2[] = {0,   1,   0,   1,   2};
+     const MSKrealt qoval2[] =   {2.0, 3.0, 1.0, 1.0, 4.0};
+
+     r = MSK_putqobj(task, 5, qosubi2, qosubj2, qoval2);
+     if (r != MSK_RES_OK) throw std::runtime_error("MSK_putqobj");
+
+     r = MSK_putcfix(task, 10);
+     if (r != MSK_RES_OK) throw std::runtime_error("MSK_putcfix");
+
+     r = MSK_putobjsense(task, MSK_OBJECTIVE_SENSE_MINIMIZE);
+     if (r != MSK_RES_OK) throw std::runtime_error("MSK_putobjsense");
+
+
+     r = MSK_optimizetrm(task, &trmcode);
+     if (r != MSK_RES_OK) throw std::runtime_error("MSK_optimizetrm");
+
+//     MSK_solutionsummary(task, MSK_STREAM_LOG);
+
+     r = MSK_getsolsta(task, MSK_SOL_ITR, &solsta);
+     if (r != MSK_RES_OK) throw std::runtime_error("MSK_getsolsta result");
+     if (solsta != MSK_SOL_STA_OPTIMAL) throw std::runtime_error("solsta != MSK_SOL_STA_OPTIMAL");
+
+     MSKrealt result2[3];
+     MSK_getxx(task, MSK_SOL_ITR, result2);
+
+     std::cout << "\nx0 = " << result2[0];
+     std::cout << "\nx1 = " << result2[1];
+     std::cout << "\nx2 = " << result2[2] << std::endl;
+
+     MSK_getdualobj(task, MSK_SOL_ITR, &dualobj);
+     std::cout << "\nMSK_SOL_ITR sol = " << dualobj << std::endl;
+
+     r = MSK_deletetask(&task);
+     if (r != MSK_RES_OK) std::cout << "MSK_deletetask error" << std::endl;
+
+
 }
