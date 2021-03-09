@@ -146,7 +146,8 @@ void MainWindow::on_action_simulation_start_triggered(bool checked)
     if(!worker->running && checked){
         qDebug() << "start button - starting";
         statusLabel->setText("starting simulation");
-        // controller.Prepare();
+        modelController.Prepare();
+
         worker->Resume();
     }
     else if(worker->running && !checked)

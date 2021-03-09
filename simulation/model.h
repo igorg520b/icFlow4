@@ -45,6 +45,8 @@
 #include "mesh.h"
 #include "equationofmotionsolver.h"
 
+#include <Eigen/Core>
+
 namespace icy { class Model; class Node; class Element;}
 
 class icy::Model : public QObject
@@ -60,7 +62,7 @@ public:
     Model();
     void Reset(SimParams &prms);
 
-    void InitialGuess(double timeStep);
+    void InitialGuess(SimParams &prms, double timeStep);
     void AssembleAndSolve(SimParams &prms, double timeStep);
     void AcceptTentativeValues(double timeStep);
     void UnsafeUpdateGeometry();    // called from the main thread

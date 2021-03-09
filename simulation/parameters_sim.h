@@ -50,7 +50,7 @@ public:
         Thickness = 0.1;
 
         PoissonsRatio = 0.3;
-        YoungsModulus = 3.7e4;
+        YoungsModulus = 5;
 
         CharacteristicLength = 0.05;
 

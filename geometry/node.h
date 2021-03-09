@@ -32,7 +32,8 @@ public:
 
     Eigen::Vector2d x_initial;  // initial configuration
     Eigen::Vector2d xn, vn;     // position and velocity at step n
-    Eigen::Vector2d xt;         // at step n+1
+    Eigen::Vector2d xt;         // tentative coordinates
+    Eigen::Vector2d x_hat;
 
     void ComputeEquationEntries(EquationOfMotionSolver &eq, SimParams &prms, double timeStep);
 

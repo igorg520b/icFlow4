@@ -103,7 +103,7 @@ void EquationOfMotionSolver::CreateStructure()
         if(rows_Neighbors[row]->size() == 0) throw std::runtime_error("matrix row contains no entries");
         tbb::concurrent_vector<unsigned> &sorted_vec = *rows_Neighbors[row];
 
-        unsigned previous_column = -1;
+        int previous_column = -1;
         for(unsigned int const &local_column : sorted_vec)
         {
             rows_pcsr[row]->push_back(count);
@@ -134,7 +134,11 @@ void EquationOfMotionSolver::CreateStructure()
 
 
 
-            if(local_column <= previous_column) throw std::runtime_error("column entries are not sorted");
+            if((int)local_column <= previous_column) {
+                std::cout << "sorted_vec: ";
+                for(unsigned int const &idx : sorted_vec) std::cout << idx << ", ";
+                throw std::runtime_error("column entries are not sorted");
+            }
             previous_column = local_column;
         }
     }
@@ -200,7 +204,7 @@ void EquationOfMotionSolver::AddToC(const int idx, const Eigen::Vector2d &vec)
     cval[idx*DOFS+1]+=vec.y();
 }
 
-void EquationOfMotionSolver::AddToConstTerm(double c)
+void EquationOfMotionSolver::AddToConstTerm(const double c)
 {
 #pragma omp atomic
     cfix+=c;

@@ -18,7 +18,7 @@ int main(int argc, char *argv[])
     { std::cout << omp_get_thread_num(); }
     std::cout << std::endl;
 
-    EquationOfMotionSolver eq; eq.TestSolve(); return 0;
+    //EquationOfMotionSolver eq; eq.TestSolve(); return 0;
 
     gmsh::initialize();
 

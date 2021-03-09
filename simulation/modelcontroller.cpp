@@ -20,8 +20,8 @@ bool icy::ModelController::Step(void)
     std::cout << "ModelControllerTest::Step " << currentStep << std::endl;
 
     double h = prms.InitialTimeStep; // time step
-    model.InitialGuess(h);
-    for(int i=0;i<3;i++)
+    model.InitialGuess(prms, h);
+    for(int i=0;i<2;i++)
     {
         if(abortRequested) {Aborting(); return false;}
         model.AssembleAndSolve(prms, h);

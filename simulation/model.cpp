@@ -173,7 +173,7 @@ void icy::Model::InitializeLUT(int table=1)
                     (double)lutArrayTerrain[i][2], 1.0);
 }
 
-void icy::Model::InitialGuess(double timeStep)
+void icy::Model::InitialGuess(SimParams &prms, double timeStep)
 {
     std::size_t nNodes = mesh.nodes.size();
 #pragma omp parallel for
@@ -181,7 +181,12 @@ void icy::Model::InitialGuess(double timeStep)
     {
         icy::Node &nd = mesh.nodes[i];
         if(nd.pinned) continue;
-        nd.xt = nd.xn + nd.vn*timeStep;
+
+//        double mass = nd.area * prms.Density * prms.Thickness;
+        nd.x_hat = nd.xn + timeStep*nd.vn;
+        nd.x_hat.y() -= prms.Gravity*timeStep*timeStep;
+ //       nd.xt = nd.xn + nd.vn*timeStep;
+        nd.xt = nd.x_hat;
     }
 
     freeNodeCount = 0;
@@ -221,7 +226,11 @@ void icy::Model::AssembleAndSolve(SimParams &prms, double timeStep)
     for(std::size_t i=0;i<nNodes;i++)
     {
         icy::Node &nd = mesh.nodes[i];
-        if(!nd.pinned) eqOfMotion.GetTentativeResult(nd.eqId, nd.xt);
+        Eigen::Vector2d delta_x;
+        if(!nd.pinned) {
+            eqOfMotion.GetTentativeResult(nd.eqId, delta_x);
+            nd.xt+=delta_x;
+        }
     }
 }
 

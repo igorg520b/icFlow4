@@ -24,7 +24,7 @@ public:
     // creating the values array
     void AddToQ(const int row, const int column, const Eigen::Matrix2d &mat);
     void AddToC(const int idx, const Eigen::Vector2d &vec);
-    void AddToConstTerm(double c);
+    void AddToConstTerm(const double c);
 
     void Solve();
     void TestSolve(); // test solve using sample data

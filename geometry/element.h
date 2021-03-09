@@ -26,6 +26,9 @@ public:
     void AddToSparsityStructure(EquationOfMotionSolver &eq);
     void ComputeEquationEntries(EquationOfMotionSolver &eq, SimParams &prms, double timeStep);
 
+private:
+    void SpringModel(EquationOfMotionSolver &eq, SimParams &prms, double timeStep, Node *nd1, Node *nd2);
+
 };
 
 #endif // ELEMENT123_H
