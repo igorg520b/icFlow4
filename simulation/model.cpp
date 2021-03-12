@@ -110,7 +110,7 @@ void icy::Model::ChangeVisualizationOption(VisOpt option)
     VisualizingVariable = option;
 
 
-    if(VisualizingVariable == VisOpt::elem_area)
+    if(VisualizingVariable == VisOpt::elem_area || VisualizingVariable == VisOpt::energy_density)
     {
         ugrid->GetPointData()->RemoveArray("visualized_values");
         ugrid->GetCellData()->AddArray(visualized_values);
@@ -147,6 +147,11 @@ void icy::Model::UpdateValues()
         case elem_area:
         visualized_values->SetNumberOfValues(mesh.elems.size());
         for(size_t i=0;i<mesh.elems.size();i++) visualized_values->SetValue(i, mesh.elems[i].area_initial);
+        break;
+
+    case energy_density:
+        visualized_values->SetNumberOfValues(mesh.elems.size());
+        for(size_t i=0;i<mesh.elems.size();i++) visualized_values->SetValue(i, mesh.elems[i].strain_energy_density);
         break;
     default:
         break;
