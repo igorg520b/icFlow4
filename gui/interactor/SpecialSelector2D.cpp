@@ -142,6 +142,7 @@ void SpecialSelector2D::OnMouseMove()
               nd.xn.x() -= delta[0];
               nd.xn.y() -= delta[1];
               nd.xt = nd.xn;
+              nd.vn = Eigen::Vector2d::Zero();
           }
 
 //          camera->SetFocalPoint(

@@ -41,8 +41,8 @@ public:
     SimParams() { Reset(); }
 
     void Reset() {
-        MaxSteps = 2000;
-        InitialTimeStep = 0.02;
+        MaxSteps = 20000;
+        InitialTimeStep = 0.005;
 
         // material parameters and physical constants
         Gravity = 9.81;

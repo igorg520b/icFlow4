@@ -75,7 +75,7 @@ MainWindow::MainWindow(QWidget *parent)
     statusLabelAttempt->setFixedWidth(70);
 
     labelStepCount->setSizePolicy(sp);
-    labelStepCount->setFixedWidth(70);
+    labelStepCount->setFixedWidth(100);
 
     ui->statusbar->addWidget(statusLabel);
     ui->statusbar->addPermanentWidget(statusLabelAttempt);

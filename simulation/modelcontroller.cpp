@@ -21,7 +21,7 @@ bool icy::ModelController::Step(void)
 
     double h = prms.InitialTimeStep; // time step
     model.InitialGuess(prms, h);
-    for(int i=0;i<2;i++)
+    for(int i=0;i<3;i++)
     {
         if(abortRequested) {Aborting(); return false;}
         model.AssembleAndSolve(prms, h);

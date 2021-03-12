@@ -180,13 +180,14 @@ void icy::Model::InitialGuess(SimParams &prms, double timeStep)
     for(std::size_t i=0;i<nNodes;i++)
     {
         icy::Node &nd = mesh.nodes[i];
-        if(nd.pinned) continue;
+        if(nd.pinned) { nd.vn=Eigen::Vector2d::Zero(); continue; }
 
 //        double mass = nd.area * prms.Density * prms.Thickness;
         nd.x_hat = nd.xn + timeStep*nd.vn;
         nd.x_hat.y() -= prms.Gravity*timeStep*timeStep;
  //       nd.xt = nd.xn + nd.vn*timeStep;
-        nd.xt = nd.x_hat;
+ //       nd.xt = nd.x_hat;
+        nd.xt = nd.xn;
     }
 
     freeNodeCount = 0;
@@ -242,9 +243,10 @@ void icy::Model::AcceptTentativeValues(double timeStep)
     for(std::size_t i=0;i<nNodes;i++)
     {
         icy::Node &nd = mesh.nodes[i];
-        if(nd.pinned) continue;
+        if(nd.pinned) { continue; }
         Eigen::Vector2d dx = nd.xt-nd.xn;
         nd.xn = nd.xt;
+        //Eigen::Vector2d v_old = nd.vn;
         nd.vn = dx/timeStep;
         // nd.xn.x() += 0.001; // for testing
     }
