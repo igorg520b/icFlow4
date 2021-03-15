@@ -9,8 +9,6 @@ set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
-set(CXXFLAGS -fopenmp)
-
 #find_package(Boost 1.71.0)
 
 find_package(VTK COMPONENTS
@@ -96,28 +94,7 @@ add_executable(fl4
     gui/interactor/SpecialSelector2D.cpp
     gui/interactor/SpecialSelector2D.h
 
-#[[
-    geometry/edge.cpp
-    geometry/edge.h
 
-    geometry/floevisualization.h
-    geometry/floevisualization.cpp
-#]]
-
-#[[
-    simulation/linearsystem.cpp
-    simulation/linearsystem.h
-    simulation/serializer.cpp
-    simulation/serializer.h
-    simulation/SimpleObjectPool.h
-
-    geometry/solid3d.cpp
-    geometry/solid3d.h
-
-
-
-    simulation/frameinfo.h
-#]]
 )
 
 
@@ -144,5 +121,7 @@ target_link_libraries(fl4 PUBLIC gomp pthread m dl)
 target_include_directories(fl4 PUBLIC "/home/s2/mosek/9.2/tools/platform/linux64x86/h")
 target_link_directories(fl4 PUBLIC "/home/s2/mosek/9.2/tools/platform/linux64x86/bin")
 target_link_libraries(fl4 PRIVATE mosek64)
+
+target_compile_options(fl4 PUBLIC -fopenmp)
 
 

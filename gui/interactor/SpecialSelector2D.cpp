@@ -49,8 +49,7 @@ void SpecialSelector2D::OnLeftButtonDown()
     // set "mouse_remained_statinary" flag
     mouse_remained_stationary = true;
 
-    std::cout << "SpecialSelector2D::OnLeftButtonDown()" << std::endl;
-//    vtkInteractorStyleRubberBand2D::OnLeftButtonDown();
+    //    std::cout << "SpecialSelector2D::OnLeftButtonDown()" << std::endl;
 }
 
 void SpecialSelector2D::OnLeftButtonUp()
@@ -60,7 +59,7 @@ void SpecialSelector2D::OnLeftButtonUp()
     // if "mouse_remained_statinary", then toggle point selection
     if(mouse_remained_stationary)
     {
-        std::cout << "SpecialSelector2D::OnLeftButtonUp() mouse_remained_stationary" << std::endl;
+        //        std::cout << "SpecialSelector2D::OnLeftButtonUp() mouse_remained_stationary" << std::endl;
         vtkPointPicker *pp = dynamic_cast<vtkPointPicker*>(this->Interactor->GetPicker());
 
         int result = pp->Pick(this->Interactor->GetEventPosition()[0],
@@ -70,7 +69,7 @@ void SpecialSelector2D::OnLeftButtonUp()
 
         vtkIdType id = pp->GetPointId();
         if(result == 0 || id<0) {
-            std::cout << "SpecialSelector2D::OnLeftButtonUp() nothing selected" << std::endl;
+            //            std::cout << "SpecialSelector2D::OnLeftButtonUp() nothing selected" << std::endl;
             return;
         }
 
@@ -79,93 +78,63 @@ void SpecialSelector2D::OnLeftButtonUp()
             mw->modelController.model.mesh.nodes[id].pinned = true;
         mw->modelController.model.UnsafeUpdateGeometry();
         this->GetInteractor()->Render();
-//        mw->renderWindow->Render();
     }
-
-//    vtkInteractorStyleRubberBand2D::OnLeftButtonUp();
 }
 
 void SpecialSelector2D::OnMouseMove()
 {
     mouse_remained_stationary = false;
-//    std::cout << "SpecialSelector2D::OnMouseMove()" << std::endl;
+    //    std::cout << "SpecialSelector2D::OnMouseMove()" << std::endl;
 
     if(this->Interaction == SELECTING)
     {
-        std::cout << "SpecialSelector2D::OnMouseMove()  this->Interaction == SELECTING" << std::endl;
-
         vtkRenderWindowInteractor* rwi = this->GetInteractor();
         int lastPt[] = { 0, 0 };
         rwi->GetLastEventPosition(lastPt);
         int curPt[] = { 0, 0 };
         rwi->GetEventPosition(curPt);
 
-        std::cout << "SpecialSelector2D::OnMouseMove()  position" << std::endl;
-
         if(this->CurrentRenderer == nullptr) std::cout << "CurrentRenderer is nullptr" << std::endl;
 
         vtkCamera* camera = this->CurrentRenderer->GetActiveCamera();
-        std::cout << "SpecialSelector2D::OnMouseMove()  camera1" << std::endl;
-        if(camera == nullptr)  std::cout << "SpecialSelector2D::OnMouseMove() camera is null" << std::endl;
-        else std::cout << "SpecialSelector2D::OnMouseMove() camera is not null" << std::endl;
 
         vtkRenderer* renderer = this->CurrentRenderer;
 
         double camera_parallelScale = camera->GetParallelScale();
-        std::cout << "SpecialSelector2D::OnMouseMove() parallelScale" << std::endl;
 
         int* renderer_getSize = renderer->GetSize();
-        std::cout << "SpecialSelector2D::OnMouseMove() renderer_getSize" << std::endl;
 
         int renderer_getSize1 = renderer_getSize[1];
 
         double lastScale = 2.0 *  camera_parallelScale / renderer_getSize1;
-
-         std::cout << "SpecialSelector2D::OnMouseMove() step1" << std::endl;
 
         double lastFocalPt[] = { 0, 0, 0 };
         camera->GetFocalPoint(lastFocalPt);
         double lastPos[] = { 0, 0, 0 };
         camera->GetPosition(lastPos);
 
-        std::cout << "SpecialSelector2D::OnMouseMove()  camera" << std::endl;
-
         double delta[] = { 0, 0, 0 };
-          delta[0] = -lastScale * (curPt[0] - lastPt[0]);
-          delta[1] = -lastScale * (curPt[1] - lastPt[1]);
-          delta[2] = 0;
+        delta[0] = -lastScale * (curPt[0] - lastPt[0]);
+        delta[1] = -lastScale * (curPt[1] - lastPt[1]);
+        delta[2] = 0;
 
-          std::cout << "SpecialSelector2D::OnMouseMove()  for loop" << std::endl;
-          for(icy::Node &nd : mw->modelController.model.mesh.nodes)
-          {
-              if(!nd.selected) continue;
-              nd.xn.x() -= delta[0];
-              nd.xn.y() -= delta[1];
-              nd.xt = nd.xn;
-              nd.vn = Eigen::Vector2d::Zero();
-          }
+        for(icy::Node &nd : mw->modelController.model.mesh.nodes)
+        {
+            if(!nd.selected) continue;
+            nd.xn.x() -= delta[0];
+            nd.xn.y() -= delta[1];
+            nd.xt = nd.xn;
+            nd.vn = Eigen::Vector2d::Zero();
+        }
 
-//          camera->SetFocalPoint(
-//            lastFocalPt[0] + delta[0], lastFocalPt[1] + delta[1], lastFocalPt[2] + delta[2]);
-//          camera->SetPosition(lastPos[0] + delta[0], lastPos[1] + delta[1], lastPos[2] + delta[2]);
-//          this->InvokeEvent(vtkCommand::InteractionEvent);
-          std::cout << "SpecialSelector2D::OnMouseMove()  updating geometry" << std::endl;
+        mw->modelController.model.UnsafeUpdateGeometry();
 
-          mw->modelController.model.UnsafeUpdateGeometry();
-
-          rwi->Render();
-          std::cout << "SpecialSelector2D::OnMouseMove()  done" << std::endl;
-        return;
+        rwi->Render();
     }
-
-    // unset "mouse_remained_statinary" flag
-
-    // if LMB (see base source), then drag selection
-
-    // otherwise call base
-
-//    std::cout << "SpecialSelector2D::OnMouseMove()" << std::endl;
-    vtkInteractorStyleRubberBand2D::OnMouseMove();
+    else
+    {
+        vtkInteractorStyleRubberBand2D::OnMouseMove();
+    }
 }
 
 
@@ -187,348 +156,7 @@ void SpecialSelector2D::OnRightButtonDown()
         mw->modelController.model.mesh.nodes[id].selected = false;
     mw->modelController.model.UnsafeUpdateGeometry();
     this->GetInteractor()->Render();
-//    mw->renderWindow->Render();
 }
 
 void SpecialSelector2D::OnRightButtonUp() { }
 
-
-
-
-/*
-vtkStandardNewMacro(vtkInteractorStyleRubberBand2D);
-
-//------------------------------------------------------------------------------
-vtkInteractorStyleRubberBand2D::vtkInteractorStyleRubberBand2D()
-{
-  this->PixelArray = vtkUnsignedCharArray::New();
-  this->Interaction = NONE;
-  this->RenderOnMouseMove = false;
-  this->StartPosition[0] = 0;
-  this->StartPosition[1] = 0;
-  this->EndPosition[0] = 0;
-  this->EndPosition[1] = 0;
-}
-
-//------------------------------------------------------------------------------
-vtkInteractorStyleRubberBand2D::~vtkInteractorStyleRubberBand2D()
-{
-  this->PixelArray->Delete();
-}
-
-//------------------------------------------------------------------------------
-void vtkInteractorStyleRubberBand2D::OnLeftButtonDown()
-{
-  if (this->Interaction == NONE)
-  {
-    if (this->Interactor->GetAltKey())
-    {
-      this->Interaction = PANNING;
-    }
-    else
-    {
-      this->Interaction = SELECTING;
-      vtkRenderWindow* renWin = this->Interactor->GetRenderWindow();
-
-      this->StartPosition[0] = this->Interactor->GetEventPosition()[0];
-      this->StartPosition[1] = this->Interactor->GetEventPosition()[1];
-      this->EndPosition[0] = this->StartPosition[0];
-      this->EndPosition[1] = this->StartPosition[1];
-
-      this->PixelArray->Initialize();
-      this->PixelArray->SetNumberOfComponents(4);
-      const int* size = renWin->GetSize();
-      this->PixelArray->SetNumberOfTuples(size[0] * size[1]);
-
-      renWin->GetRGBACharPixelData(0, 0, size[0] - 1, size[1] - 1, 1, this->PixelArray);
-    }
-    this->FindPokedRenderer(this->StartPosition[0], this->StartPosition[1]);
-    this->InvokeEvent(vtkCommand::StartInteractionEvent);
-  }
-}
-
-//------------------------------------------------------------------------------
-void vtkInteractorStyleRubberBand2D::OnLeftButtonUp()
-{
-  if (this->Interaction == SELECTING)
-  {
-    this->Interaction = NONE;
-
-    // Clear the rubber band
-    const int* size = this->Interactor->GetRenderWindow()->GetSize();
-    unsigned char* pixels = this->PixelArray->GetPointer(0);
-    this->Interactor->GetRenderWindow()->SetRGBACharPixelData(
-      0, 0, size[0] - 1, size[1] - 1, pixels, 0);
-    this->Interactor->GetRenderWindow()->Frame();
-
-    unsigned int rect[5];
-    rect[0] = this->StartPosition[0];
-    rect[1] = this->StartPosition[1];
-    rect[2] = this->EndPosition[0];
-    rect[3] = this->EndPosition[1];
-    if (this->Interactor->GetShiftKey())
-    {
-      rect[4] = SELECT_UNION;
-    }
-    else
-    {
-      rect[4] = SELECT_NORMAL;
-    }
-    this->InvokeEvent(vtkCommand::SelectionChangedEvent, reinterpret_cast<void*>(rect));
-    this->InvokeEvent(vtkCommand::EndInteractionEvent);
-  }
-  else if (this->Interaction == PANNING)
-  {
-    this->Interaction = NONE;
-    this->InvokeEvent(vtkCommand::EndInteractionEvent);
-  }
-}
-
-//------------------------------------------------------------------------------
-void vtkInteractorStyleRubberBand2D::OnMiddleButtonDown()
-{
-  if (this->Interaction == NONE)
-  {
-    this->Interaction = PANNING;
-    this->FindPokedRenderer(
-      this->Interactor->GetEventPosition()[0], this->Interactor->GetEventPosition()[1]);
-    this->InvokeEvent(vtkCommand::StartInteractionEvent);
-  }
-}
-
-//------------------------------------------------------------------------------
-void vtkInteractorStyleRubberBand2D::OnMiddleButtonUp()
-{
-  if (this->Interaction == PANNING)
-  {
-    this->Interaction = NONE;
-    this->InvokeEvent(vtkCommand::EndInteractionEvent);
-  }
-}
-
-//------------------------------------------------------------------------------
-void vtkInteractorStyleRubberBand2D::OnRightButtonDown()
-{
-  if (this->Interaction == NONE)
-  {
-    this->Interaction = ZOOMING;
-    this->FindPokedRenderer(
-      this->Interactor->GetEventPosition()[0], this->Interactor->GetEventPosition()[1]);
-    this->InvokeEvent(vtkCommand::StartInteractionEvent);
-  }
-}
-
-//------------------------------------------------------------------------------
-void vtkInteractorStyleRubberBand2D::OnRightButtonUp()
-{
-  if (this->Interaction == ZOOMING)
-  {
-    this->Interaction = NONE;
-    this->InvokeEvent(vtkCommand::EndInteractionEvent);
-  }
-}
-
-//------------------------------------------------------------------------------
-void vtkInteractorStyleRubberBand2D::OnMouseMove()
-{
-  if (this->Interaction == PANNING || this->Interaction == ZOOMING)
-  {
-    vtkRenderWindowInteractor* rwi = this->GetInteractor();
-    int lastPt[] = { 0, 0 };
-    rwi->GetLastEventPosition(lastPt);
-    int curPt[] = { 0, 0 };
-    rwi->GetEventPosition(curPt);
-
-    vtkCamera* camera = this->CurrentRenderer->GetActiveCamera();
-    double lastScale = 2.0 * camera->GetParallelScale() / this->CurrentRenderer->GetSize()[1];
-    double lastFocalPt[] = { 0, 0, 0 };
-    camera->GetFocalPoint(lastFocalPt);
-    double lastPos[] = { 0, 0, 0 };
-    camera->GetPosition(lastPos);
-
-    if (this->Interaction == PANNING)
-    {
-      double delta[] = { 0, 0, 0 };
-      delta[0] = -lastScale * (curPt[0] - lastPt[0]);
-      delta[1] = -lastScale * (curPt[1] - lastPt[1]);
-      delta[2] = 0;
-      camera->SetFocalPoint(
-        lastFocalPt[0] + delta[0], lastFocalPt[1] + delta[1], lastFocalPt[2] + delta[2]);
-      camera->SetPosition(lastPos[0] + delta[0], lastPos[1] + delta[1], lastPos[2] + delta[2]);
-      this->InvokeEvent(vtkCommand::InteractionEvent);
-      rwi->Render();
-    }
-    else if (this->Interaction == ZOOMING)
-    {
-      double motion = 10.0;
-      double dyf = motion * (curPt[1] - lastPt[1]) / this->CurrentRenderer->GetCenter()[1];
-      double factor = pow(1.1, dyf);
-      camera->SetParallelScale(camera->GetParallelScale() / factor);
-      this->InvokeEvent(vtkCommand::InteractionEvent);
-      rwi->Render();
-    }
-  }
-  else if (this->Interaction == SELECTING)
-  {
-    this->EndPosition[0] = this->Interactor->GetEventPosition()[0];
-    this->EndPosition[1] = this->Interactor->GetEventPosition()[1];
-    const int* size = this->Interactor->GetRenderWindow()->GetSize();
-    if (this->EndPosition[0] > (size[0] - 1))
-    {
-      this->EndPosition[0] = size[0] - 1;
-    }
-    if (this->EndPosition[0] < 0)
-    {
-      this->EndPosition[0] = 0;
-    }
-    if (this->EndPosition[1] > (size[1] - 1))
-    {
-      this->EndPosition[1] = size[1] - 1;
-    }
-    if (this->EndPosition[1] < 0)
-    {
-      this->EndPosition[1] = 0;
-    }
-    this->InvokeEvent(vtkCommand::InteractionEvent);
-    this->RedrawRubberBand();
-  }
-  else if (this->RenderOnMouseMove)
-  {
-    this->GetInteractor()->Render();
-  }
-}
-
-//------------------------------------------------------------------------------
-void vtkInteractorStyleRubberBand2D::OnMouseWheelForward()
-{
-  this->FindPokedRenderer(
-    this->Interactor->GetEventPosition()[0], this->Interactor->GetEventPosition()[1]);
-  vtkCamera* camera = this->CurrentRenderer->GetActiveCamera();
-  if (!camera)
-  {
-    return;
-  }
-  this->Interaction = ZOOMING;
-  double motion = 10.0;
-  double dyf = motion * 0.2;
-  double factor = pow(1.1, dyf);
-  camera->SetParallelScale(camera->GetParallelScale() / factor);
-  this->InvokeEvent(vtkCommand::InteractionEvent);
-  this->GetInteractor()->Render();
-  this->Interaction = NONE;
-}
-
-//------------------------------------------------------------------------------
-void vtkInteractorStyleRubberBand2D::OnMouseWheelBackward()
-{
-  this->FindPokedRenderer(
-    this->Interactor->GetEventPosition()[0], this->Interactor->GetEventPosition()[1]);
-  vtkCamera* camera = this->CurrentRenderer->GetActiveCamera();
-  if (!camera)
-  {
-    return;
-  }
-  this->Interaction = ZOOMING;
-  double motion = 10.0;
-  double dyf = motion * -0.2;
-  double factor = pow(1.1, dyf);
-  camera->SetParallelScale(camera->GetParallelScale() / factor);
-  this->InvokeEvent(vtkCommand::InteractionEvent);
-  this->GetInteractor()->Render();
-  this->Interaction = NONE;
-}
-
-//------------------------------------------------------------------------------
-void vtkInteractorStyleRubberBand2D::RedrawRubberBand()
-{
-  // Update the rubber band on the screen
-  const int* size = this->Interactor->GetRenderWindow()->GetSize();
-
-  vtkUnsignedCharArray* tmpPixelArray = vtkUnsignedCharArray::New();
-  tmpPixelArray->DeepCopy(this->PixelArray);
-  unsigned char* pixels = tmpPixelArray->GetPointer(0);
-
-  int min[2], max[2];
-
-  min[0] =
-    this->StartPosition[0] <= this->EndPosition[0] ? this->StartPosition[0] : this->EndPosition[0];
-  if (min[0] < 0)
-  {
-    min[0] = 0;
-  }
-  if (min[0] >= size[0])
-  {
-    min[0] = size[0] - 1;
-  }
-
-  min[1] =
-    this->StartPosition[1] <= this->EndPosition[1] ? this->StartPosition[1] : this->EndPosition[1];
-  if (min[1] < 0)
-  {
-    min[1] = 0;
-  }
-  if (min[1] >= size[1])
-  {
-    min[1] = size[1] - 1;
-  }
-
-  max[0] =
-    this->EndPosition[0] > this->StartPosition[0] ? this->EndPosition[0] : this->StartPosition[0];
-  if (max[0] < 0)
-  {
-    max[0] = 0;
-  }
-  if (max[0] >= size[0])
-  {
-    max[0] = size[0] - 1;
-  }
-
-  max[1] =
-    this->EndPosition[1] > this->StartPosition[1] ? this->EndPosition[1] : this->StartPosition[1];
-  if (max[1] < 0)
-  {
-    max[1] = 0;
-  }
-  if (max[1] >= size[1])
-  {
-    max[1] = size[1] - 1;
-  }
-
-  int i;
-  for (i = min[0]; i <= max[0]; i++)
-  {
-    pixels[4 * (min[1] * size[0] + i)] = 255 ^ pixels[4 * (min[1] * size[0] + i)];
-    pixels[4 * (min[1] * size[0] + i) + 1] = 255 ^ pixels[4 * (min[1] * size[0] + i) + 1];
-    pixels[4 * (min[1] * size[0] + i) + 2] = 255 ^ pixels[4 * (min[1] * size[0] + i) + 2];
-    pixels[4 * (max[1] * size[0] + i)] = 255 ^ pixels[4 * (max[1] * size[0] + i)];
-    pixels[4 * (max[1] * size[0] + i) + 1] = 255 ^ pixels[4 * (max[1] * size[0] + i) + 1];
-    pixels[4 * (max[1] * size[0] + i) + 2] = 255 ^ pixels[4 * (max[1] * size[0] + i) + 2];
-  }
-  for (i = min[1] + 1; i < max[1]; i++)
-  {
-    pixels[4 * (i * size[0] + min[0])] = 255 ^ pixels[4 * (i * size[0] + min[0])];
-    pixels[4 * (i * size[0] + min[0]) + 1] = 255 ^ pixels[4 * (i * size[0] + min[0]) + 1];
-    pixels[4 * (i * size[0] + min[0]) + 2] = 255 ^ pixels[4 * (i * size[0] + min[0]) + 2];
-    pixels[4 * (i * size[0] + max[0])] = 255 ^ pixels[4 * (i * size[0] + max[0])];
-    pixels[4 * (i * size[0] + max[0]) + 1] = 255 ^ pixels[4 * (i * size[0] + max[0]) + 1];
-    pixels[4 * (i * size[0] + max[0]) + 2] = 255 ^ pixels[4 * (i * size[0] + max[0]) + 2];
-  }
-
-  this->Interactor->GetRenderWindow()->SetRGBACharPixelData(
-    0, 0, size[0] - 1, size[1] - 1, pixels, 0);
-  this->Interactor->GetRenderWindow()->Frame();
-
-  tmpPixelArray->Delete();
-}
-
-//------------------------------------------------------------------------------
-void vtkInteractorStyleRubberBand2D::PrintSelf(ostream& os, vtkIndent indent)
-{
-  this->Superclass::PrintSelf(os, indent);
-  os << indent << "Interaction: " << this->Interaction << endl;
-  os << indent << "RenderOnMouseMove: " << this->RenderOnMouseMove << endl;
-  os << indent << "StartPosition: " << this->StartPosition[0] << "," << this->StartPosition[1]
-     << endl;
-  os << indent << "EndPosition: " << this->EndPosition[0] << "," << this->EndPosition[1] << endl;
-}
-*/

@@ -20,6 +20,10 @@ class icy::SimParams : public QObject
 
     // integration
     Q_PROPERTY(double in_InitialTimeStep MEMBER InitialTimeStep NOTIFY propertyChanged)
+    Q_PROPERTY(double in_ConvergenceEpsilon MEMBER ConvergenceEpsilon NOTIFY propertyChanged)
+    Q_PROPERTY(double in_ConvergenceCutoff MEMBER ConvergenceCutoff NOTIFY propertyChanged)
+    Q_PROPERTY(int in_MinIter MEMBER MinIter NOTIFY propertyChanged)
+    Q_PROPERTY(int in_MaxIter MEMBER MaxIter NOTIFY propertyChanged)
 
     // material parameters and physical constants
     Q_PROPERTY(double p_Gravity MEMBER Gravity NOTIFY propertyChanged)
@@ -33,10 +37,12 @@ class icy::SimParams : public QObject
     Q_PROPERTY(double s_ElemSize MEMBER CharacteristicLength NOTIFY propertyChanged)
 
 public:
-    int MaxSteps;
+    int MaxSteps, MinIter, MaxIter;
     double InitialTimeStep;
     double Gravity, Density, PoissonsRatio, YoungsModulus, Thickness;
     double CharacteristicLength;
+
+    double ConvergenceEpsilon, ConvergenceCutoff;
 
     SimParams() { Reset(); }
 
@@ -50,9 +56,14 @@ public:
         Thickness = 0.1;
 
         PoissonsRatio = 0.3;
-        YoungsModulus = 5;
+        YoungsModulus = 50;
 
         CharacteristicLength = 0.05;
+        ConvergenceEpsilon = 1e-2;
+        ConvergenceCutoff = 1e-7;
+
+        MinIter = 3;
+        MaxIter = 10;
 
         emit propertyChanged();
     }

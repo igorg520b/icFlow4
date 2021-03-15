@@ -210,58 +210,81 @@ void EquationOfMotionSolver::AddToConstTerm(const double c)
     cfix+=c;
 }
 
-void EquationOfMotionSolver::Solve()
+bool EquationOfMotionSolver::Solve()
 {
     MSKrescodee  r;
     MSKtask_t    task = NULL;
     r = MSK_maketask(env, 0, N*DOFS, &task);
     if (r != MSK_RES_OK) throw std::runtime_error("maketask");
 
-    r = MSK_linkfunctotaskstream(task, MSK_STREAM_LOG, NULL, printstr);
-    if (r != MSK_RES_OK) throw std::runtime_error("linkfunctotaskstream");
+    //    r = MSK_linkfunctotaskstream(task, MSK_STREAM_LOG, NULL, printstr);
+    //    if (r != MSK_RES_OK) throw std::runtime_error("linkfunctotaskstream");
 
     int numvar = N*DOFS;
     r = MSK_appendvars(task, numvar);
-     if (r != MSK_RES_OK) throw std::runtime_error("appendvars");
+    if (r != MSK_RES_OK) throw std::runtime_error("appendvars");
 
-     for (int j = 0; j < numvar; j++)
-     {
-         r = MSK_putvarbound(task, j, MSK_BK_FR, -MSK_DPAR_DATA_TOL_BOUND_INF, MSK_DPAR_DATA_TOL_BOUND_INF);
-         if (r != MSK_RES_OK) throw std::runtime_error("MSK_putvarbound");
-     }
+    for (int j = 0; j < numvar; j++)
+    {
+        r = MSK_putvarbound(task, j, MSK_BK_FR, -MSK_DPAR_DATA_TOL_BOUND_INF, MSK_DPAR_DATA_TOL_BOUND_INF);
+        if (r != MSK_RES_OK) throw std::runtime_error("MSK_putvarbound");
+    }
 
-     r = MSK_putclist(task, numvar, csubj.data(), cval.data());
-     if (r != MSK_RES_OK) throw std::runtime_error("MSK_putclist");
+    r = MSK_putclist(task, numvar, csubj.data(), cval.data());
+    if (r != MSK_RES_OK)
+    {
+        std::cout << "MSK_putclist returns " << r << std::endl;
+        throw std::runtime_error("MSK_putclist");
+    }
 
-     r = MSK_putqobj(task, nnz, qosubi.data(), qosubj.data(), qoval.data());
-     if (r != MSK_RES_OK) throw std::runtime_error("MSK_putqobj");
+    r = MSK_putqobj(task, nnz, qosubi.data(), qosubj.data(), qoval.data());
+    if (r != MSK_RES_OK) throw std::runtime_error("MSK_putqobj");
 
-     r = MSK_putcfix(task, cfix);
-     if (r != MSK_RES_OK) throw std::runtime_error("MSK_putcfix");
+    r = MSK_putcfix(task, cfix);
+    if (r != MSK_RES_OK) throw std::runtime_error("MSK_putcfix");
 
-     r = MSK_putobjsense(task, MSK_OBJECTIVE_SENSE_MINIMIZE);
-     if (r != MSK_RES_OK) throw std::runtime_error("MSK_putobjsense");
+    r = MSK_putobjsense(task, MSK_OBJECTIVE_SENSE_MINIMIZE);
+    if (r != MSK_RES_OK) throw std::runtime_error("MSK_putobjsense");
 
 
-     MSKrescodee trmcode;
+    MSKrescodee trmcode;
 
-     r = MSK_optimizetrm(task, &trmcode);
-     if (r != MSK_RES_OK) throw std::runtime_error("MSK_optimizetrm");
+    r = MSK_optimizetrm(task, &trmcode);
+    if(r == MSK_RES_ERR_OBJ_Q_NOT_PSD)
+    {
+        std::cout << "The quadratic coefficient matrix in the objective is not positive semidefinite" << std::endl;
+        return false;
+    }
+    if (r != MSK_RES_OK)
+    {
+        std::cout << "MSK_optimizetrm returns " << r << std::endl;
+        throw std::runtime_error("MSK_optimizetrm");
+    }
 
-//     MSK_solutionsummary(task, MSK_STREAM_LOG);
+    //     MSK_solutionsummary(task, MSK_STREAM_LOG);
 
-     MSKsolstae solsta;
-     r = MSK_getsolsta(task, MSK_SOL_ITR, &solsta);
-     if (r != MSK_RES_OK) throw std::runtime_error("MSK_getsolsta result");
-     if (solsta != MSK_SOL_STA_OPTIMAL) throw std::runtime_error("solsta != MSK_SOL_STA_OPTIMAL");
+    MSKsolstae solsta;
+    r = MSK_getsolsta(task, MSK_SOL_ITR, &solsta);
+    if (r != MSK_RES_OK) throw std::runtime_error("MSK_getsolsta result");
+    if (solsta != MSK_SOL_STA_OPTIMAL) throw std::runtime_error("solsta != MSK_SOL_STA_OPTIMAL");
 
-     MSK_getxx(task, MSK_SOL_ITR, sln.data());
+    MSK_getxx(task, MSK_SOL_ITR, sln.data());
 
-     MSK_getdualobj(task, MSK_SOL_ITR, &objective_value);
-     std::cout << "\nMSK_SOL_ITR sol = " << objective_value << std::endl;
+    MSK_getdualobj(task, MSK_SOL_ITR, &objective_value);
+    //     std::cout << "\nMSK_SOL_ITR sol = " << objective_value << std::endl;
 
-     r = MSK_deletetask(&task);
-     if (r != MSK_RES_OK) std::cout << "MSK_deletetask error" << std::endl;
+    r = MSK_deletetask(&task);
+    if (r != MSK_RES_OK) std::cout << "MSK_deletetask error" << std::endl;
+
+    // calculate solution norm
+    solution_norm_prev = solution_norm;
+    solution_norm = 0;
+#pragma omp parallel for reduction(+:solution_norm)
+    for(int i=0;i<N*DOFS;i++) solution_norm+=(double)(sln[i]*sln[i]);
+
+    solution_norm = sqrt(solution_norm);
+
+    return true;
 }
 
 

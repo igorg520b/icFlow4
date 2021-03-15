@@ -100,7 +100,6 @@ MainWindow::MainWindow(QWidget *parent)
     camera->Modified();
     renderWindow->Render();
 
-//    prefsGUI.LoadState(settings);
 //    ui->action_Load_Recent_on_Startup->setChecked(prefsGUI.LoadLastScene);
 
 //    comboBox_visualizations->setCurrentIndex(prefsGUI.VisualizationOption);
@@ -109,6 +108,8 @@ MainWindow::MainWindow(QWidget *parent)
 void MainWindow::showEvent( QShowEvent*)
 {
     pbrowser->setActiveObject(&modelController.prms);
+    QSettings settings(m_sSettingsFile);
+    comboBox_visualizations->setCurrentIndex(settings.value("vis_option").toInt());
     updateGUI();
     renderWindow->Render();
 }
@@ -132,9 +133,7 @@ void MainWindow::closeEvent( QCloseEvent* event )
 
     QByteArray arr((char*)&data[0], sizeof(double)*10);
     settings.setValue("camData", arr);
-
-//    prefsGUI.LoadLastScene = ui->action_Load_Recent_on_Startup->isChecked();
-//    prefsGUI.SaveState(settings);
+    settings.setValue("vis_option", comboBox_visualizations->currentIndex());
 
     // kill backgroundworker
     worker->Finalize();

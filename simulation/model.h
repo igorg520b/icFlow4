@@ -63,7 +63,7 @@ public:
     void Reset(SimParams &prms);
 
     void InitialGuess(SimParams &prms, double timeStep);
-    void AssembleAndSolve(SimParams &prms, double timeStep);
+    bool AssembleAndSolve(SimParams &prms, double timeStep);    // return what solver returns
     void AcceptTentativeValues(double timeStep);
     void UnsafeUpdateGeometry();    // called from the main thread
     void UpdateValues();
@@ -74,8 +74,9 @@ public:
     vtkNew<vtkActor> actor_mesh;
     vtkNew<vtkActor> actor_selected_nodes;
 
-private:
     EquationOfMotionSolver eqOfMotion;
+
+private:
 
     QMutex vtk_update_mutex; // to prevent modifying mesh data while updating VTK representation
     bool vtk_update_requested = false;  // true when signal has been already emitted to update vtk geometry

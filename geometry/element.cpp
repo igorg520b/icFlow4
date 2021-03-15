@@ -80,7 +80,10 @@ void icy::Element::NeoHookeanElasticity(EquationOfMotionSolver &eq, SimParams &p
 
     // deformed shape matrix
     Ds << x1-x3, x2-x3, y1-y3, y2-y3;
+    if(Ds.determinant()<=0) throw std::runtime_error("Ds.determinant()<=0");
     F = Ds*Dm_inv;    // deformation gradient
+    double J = F.determinant();     // represents the change of volume in comparison with the reference
+    if(J<=0) throw std::runtime_error("J<=0");
     FT = F.transpose();
     Finv = F.inverse();
     FinvT = Finv.transpose();
@@ -97,9 +100,9 @@ void icy::Element::NeoHookeanElasticity(EquationOfMotionSolver &eq, SimParams &p
     Eigen::Matrix2d DF[6];  // derivatives of F with respect to x1,y1,x2,y2,x3,y3
     for(int i=0;i<6;i++) DF[i] = DDs[i]*Dm_inv;
 
-    double J = F.determinant();     // represents the change of volume in comparison with the reference
 
     double log_J = log(J);
+    if(std::isnan(log_J)) throw std::runtime_error("J isnan");
     strain_energy_density = (mu/2.0)*((F*FT).trace()-2.0)-mu*log_J+(lambda/2.0)*log_J*log_J;
 
     // First Piola - Kirchhoff stress tensor
@@ -129,19 +132,27 @@ void icy::Element::NeoHookeanElasticity(EquationOfMotionSolver &eq, SimParams &p
         HE(5,i) = -dH(1,0)-dH(1,1);
     }
 
+    double hsq = h*h;
     // assemble the equation of motion
     for(int i=0;i<3;i++)
     {
         int row = nds[i]->eqId;
-        Eigen::Vector2d locDE = DE.block(i*2,0,2,1);
+        Eigen::Vector2d locDE = DE.block(i*2,0,2,1)*hsq;
+        if(std::isnan(locDE.x()) || std::isnan(locDE.y()))
+        {
+            std::cout << "isnan elem " << std::endl;
+            throw std::runtime_error("isnan elem");
+        }
+
         eq.AddToC(row, locDE);
         for(int j=0;j<3;j++)
         {
             int col = nds[j]->eqId;
-            Eigen::Matrix2d locHE = HE.block(i*2,j*2,2,2);
+            Eigen::Matrix2d locHE = HE.block(i*2,j*2,2,2)*hsq;
             eq.AddToQ(row, col, locHE);
         }
     }
+    eq.AddToConstTerm(strain_energy_density*W*hsq);
 }
 
 

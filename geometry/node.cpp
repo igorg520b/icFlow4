@@ -1,10 +1,5 @@
-//#include <cmath>
-//#include <cfloat>
-//#include <algorithm>
+#include <cmath>
 #include "node.h"
-//#include "model.h"
-//#include "parameters_sim.h"
-//#include "element.h"
 
 icy::Node::Node()
 {
@@ -33,6 +28,15 @@ void icy::Node::ComputeEquationEntries(EquationOfMotionSolver &eq, SimParams &pr
 
     Eigen::Vector2d lambda_n = xt-x_hat;
     Eigen::Vector2d linear_term = M_nd*lambda_n;
+    if(std::isnan(linear_term.x()) || std::isnan(linear_term.y()))
+    {
+        std::cout << "isnan node " << this->eqId << std::endl;
+        throw std::runtime_error("isnan node");
+    }
+
     eq.AddToC(eqId, linear_term);
+
+    double const_term = lambda_n.dot(M_nd*lambda_n)/2;
+    eq.AddToConstTerm(const_term);
 }
 

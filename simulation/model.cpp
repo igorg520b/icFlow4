@@ -100,6 +100,8 @@ void icy::Model::UnsafeUpdateGeometry()
     glyph_mapper->SetScalarModeToUsePointData();
     poly_data->GetPointData()->AddArray(glyph_int_data);
     poly_data->GetPointData()->SetActiveScalars("glyph_int_data");
+
+    if(VisualizingVariable != VisOpt::none) UpdateValues();
 }
 
 
@@ -185,14 +187,17 @@ void icy::Model::InitialGuess(SimParams &prms, double timeStep)
     for(std::size_t i=0;i<nNodes;i++)
     {
         icy::Node &nd = mesh.nodes[i];
-        if(nd.pinned) { nd.vn=Eigen::Vector2d::Zero(); continue; }
-
-//        double mass = nd.area * prms.Density * prms.Thickness;
-        nd.x_hat = nd.xn + timeStep*nd.vn;
-        nd.x_hat.y() -= prms.Gravity*timeStep*timeStep;
- //       nd.xt = nd.xn + nd.vn*timeStep;
- //       nd.xt = nd.x_hat;
-        nd.xt = nd.xn;
+        if(nd.pinned)
+        {
+            nd.vn=Eigen::Vector2d::Zero();
+            nd.x_hat = nd.xn;
+        }
+        else
+        {
+            nd.x_hat = nd.xn + timeStep*nd.vn;
+            nd.x_hat.y() -= prms.Gravity*timeStep*timeStep;
+            nd.xt = nd.xn;
+        }
     }
 
     freeNodeCount = 0;
@@ -205,7 +210,7 @@ void icy::Model::InitialGuess(SimParams &prms, double timeStep)
 }
 
 
-void icy::Model::AssembleAndSolve(SimParams &prms, double timeStep)
+bool icy::Model::AssembleAndSolve(SimParams &prms, double timeStep)
 {
     eqOfMotion.ClearAndResize(freeNodeCount);
 
@@ -225,7 +230,7 @@ void icy::Model::AssembleAndSolve(SimParams &prms, double timeStep)
     for(std::size_t i=0;i<nNodes;i++) mesh.nodes[i].ComputeEquationEntries(eqOfMotion, prms, timeStep);
 
     // solve
-    eqOfMotion.Solve();
+    bool result = eqOfMotion.Solve();
 
     // pull
 #pragma omp parallel for
@@ -238,6 +243,8 @@ void icy::Model::AssembleAndSolve(SimParams &prms, double timeStep)
             nd.xt+=delta_x;
         }
     }
+
+    return result;
 }
 
 void icy::Model::AcceptTentativeValues(double timeStep)

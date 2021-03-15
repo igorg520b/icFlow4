@@ -15,8 +15,6 @@ public:
     EquationOfMotionSolver();
     ~EquationOfMotionSolver();
 
-
-
     void ClearAndResize(std::size_t N);     // size N must be set; return execution time
     void AddElementToStructure(int row, int column);    // reserve non-zero positions one-by-one (thread-safe)
     void CreateStructure();
@@ -26,11 +24,13 @@ public:
     void AddToC(const int idx, const Eigen::Vector2d &vec);
     void AddToConstTerm(const double c);
 
-    void Solve();
+    bool Solve();   // true if successful
     void TestSolve(); // test solve using sample data
 
     void GetTentativeResult(int idx, Eigen::Vector2d &vec);  // solution => convenient vector form
 
+    MSKrealt objective_value;    // value of the optimized expression (should be near zero)
+    double solution_norm, solution_norm_prev=1;
 
 private:
     MSKenv_t     env  = NULL;
@@ -42,7 +42,6 @@ private:
     // linear term
     std::vector<MSKint32t> csubj;
     std::vector<MSKrealt> cval, sln;
-    MSKrealt objective_value;    // value of the optimized expression (should be zero)
 
     MSKrealt cfix;    // constant term
 
