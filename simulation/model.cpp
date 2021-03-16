@@ -223,8 +223,15 @@ bool icy::Model::AssembleAndSolve(SimParams &prms, double timeStep)
     eqOfMotion.CreateStructure();
 
     // assemble
+    bool mesh_iversion_detected = false;
 #pragma omp parallel for
-    for(std::size_t i=0;i<nElems;i++) mesh.elems[i].ComputeEquationEntries(eqOfMotion, prms, timeStep);
+    for(std::size_t i=0;i<nElems;i++)
+    {
+        bool result = mesh.elems[i].ComputeEquationEntries(eqOfMotion, prms, timeStep);
+        if(!result) mesh_iversion_detected = true;
+    }
+
+    if(mesh_iversion_detected) return false; // mesh inversion
 
 #pragma omp parallel for
     for(std::size_t i=0;i<nNodes;i++) mesh.nodes[i].ComputeEquationEntries(eqOfMotion, prms, timeStep);

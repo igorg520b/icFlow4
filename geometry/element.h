@@ -24,7 +24,7 @@ public:
     void PrecomputeInitialArea();
 
     void AddToSparsityStructure(EquationOfMotionSolver &eq);
-    void ComputeEquationEntries(EquationOfMotionSolver &eq, SimParams &prms, double timeStep);
+    bool ComputeEquationEntries(EquationOfMotionSolver &eq, SimParams &prms, double timeStep);
 
     double strain_energy_density;   // (not multiplied by volume!)
     Eigen::Vector<double, 6> DE;    // energy gradient
@@ -32,7 +32,7 @@ public:
 
 private:
     void SpringModel(EquationOfMotionSolver &eq, SimParams &prms, double timeStep, Node *nd1, Node *nd2);
-    void NeoHookeanElasticity(EquationOfMotionSolver &eq, SimParams &prms, double h);
+    bool NeoHookeanElasticity(EquationOfMotionSolver &eq, SimParams &prms, double h);
 
 };
 

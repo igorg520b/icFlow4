@@ -28,6 +28,7 @@ public:
     SimParams prms;
 
     int currentStep = 0;
+    double timeStepFactor = 1;
 
 private:
     bool abortRequested = false;

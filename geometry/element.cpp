@@ -39,9 +39,9 @@ void icy::Element::AddToSparsityStructure(EquationOfMotionSolver &eq)
 }
 
 
-void icy::Element::ComputeEquationEntries(EquationOfMotionSolver &eq, SimParams &prms, double timeStep)
+bool icy::Element::ComputeEquationEntries(EquationOfMotionSolver &eq, SimParams &prms, double timeStep)
 {
-    NeoHookeanElasticity(eq, prms, timeStep);
+    return NeoHookeanElasticity(eq, prms, timeStep);
 
     // for testing
 //    SpringModel(eq, prms, timeStep, nds[0],nds[1]);
@@ -49,7 +49,7 @@ void icy::Element::ComputeEquationEntries(EquationOfMotionSolver &eq, SimParams 
 //    SpringModel(eq, prms, timeStep, nds[2],nds[0]);
 }
 
-void icy::Element::NeoHookeanElasticity(EquationOfMotionSolver &eq, SimParams &prms, double h)
+bool icy::Element::NeoHookeanElasticity(EquationOfMotionSolver &eq, SimParams &prms, double h)
 {
     double E = prms.YoungsModulus;
     double nu = prms.PoissonsRatio;
@@ -80,7 +80,7 @@ void icy::Element::NeoHookeanElasticity(EquationOfMotionSolver &eq, SimParams &p
 
     // deformed shape matrix
     Ds << x1-x3, x2-x3, y1-y3, y2-y3;
-    if(Ds.determinant()<=0) throw std::runtime_error("Ds.determinant()<=0");
+    if(Ds.determinant()<=0) return false; // mesh is inverted
     F = Ds*Dm_inv;    // deformation gradient
     double J = F.determinant();     // represents the change of volume in comparison with the reference
     if(J<=0) throw std::runtime_error("J<=0");
@@ -153,6 +153,7 @@ void icy::Element::NeoHookeanElasticity(EquationOfMotionSolver &eq, SimParams &p
         }
     }
     eq.AddToConstTerm(strain_energy_density*W*hsq);
+    return true;
 }
 
 

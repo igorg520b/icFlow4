@@ -72,7 +72,7 @@ MainWindow::MainWindow(QWidget *parent)
     QSizePolicy sp;
     sp.setHorizontalPolicy(QSizePolicy::Fixed);
     statusLabelAttempt->setSizePolicy(sp);
-    statusLabelAttempt->setFixedWidth(70);
+    statusLabelAttempt->setFixedWidth(100);
 
     labelStepCount->setSizePolicy(sp);
     labelStepCount->setFixedWidth(100);
@@ -204,11 +204,10 @@ void MainWindow::updateGUI()
     bool r = worker->running;
     ui->action_simulation_single_step->setEnabled(!r);
 
-//    labelStepCount->setText(QString::number(modelController.currentStep));
     labelStepCount->setText(QString{"step: %1"}.arg(modelController.currentStep));
 
-    //    statusLabel->setText(r ? "running" : "paused");
-//    if(!r) ui->action_simulation_start->setEnabled(true);
+    statusLabelAttempt->setText(QString{"%1"}.arg(modelController.timeStepFactor, 6, 'f', 3, '0'));
+
     render_results();
 
 }
