@@ -62,7 +62,7 @@ public:
     Model();
     void Reset(SimParams &prms);
 
-    void InitialGuess(SimParams &prms, double timeStep);
+    void InitialGuess(SimParams &prms, double timeStep, double timeStepFactor);
     bool AssembleAndSolve(SimParams &prms, double timeStep);    // return what solver returns
     void AcceptTentativeValues(double timeStep);
     void UnsafeUpdateGeometry();    // called from the main thread
@@ -85,6 +85,7 @@ private:
     vtkNew<vtkLookupTable> hueLut;
     vtkNew<vtkNamedColors> colors;
     vtkNew<vtkPoints> points;
+    vtkNew<vtkPoints> points_manip;
 
     // 2D mesh
     vtkNew<vtkUnstructuredGrid> ugrid;

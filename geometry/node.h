@@ -35,6 +35,8 @@ public:
     Eigen::Vector2d xt;         // tentative coordinates
     Eigen::Vector2d x_hat;
 
+    Eigen::Vector2d intended_position; // when manipulating via GUI during a running simulation
+
     void ComputeEquationEntries(EquationOfMotionSolver &eq, SimParams &prms, double timeStep);
 
 };

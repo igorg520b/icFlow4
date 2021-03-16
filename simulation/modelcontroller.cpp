@@ -27,7 +27,7 @@ bool icy::ModelController::Step(void)
     do
     {
         h = prms.InitialTimeStep/timeStepFactor; // time step
-        model.InitialGuess(prms, h);
+        model.InitialGuess(prms, h, timeStepFactor);
 
         do
         {
@@ -63,7 +63,7 @@ bool icy::ModelController::Step(void)
             attempt++;
             timeStepFactor*=2;
         }
-        if(attempt > 15) throw std::runtime_error("could not solve");
+        if(attempt > 20) throw std::runtime_error("could not solve");
     } while (!res || !converges);
 
     if(timeStepFactor > 1) timeStepFactor /= 1.2;

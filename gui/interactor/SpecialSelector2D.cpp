@@ -75,7 +75,10 @@ void SpecialSelector2D::OnLeftButtonUp()
 
         mw->modelController.model.mesh.nodes[id].selected = !mw->modelController.model.mesh.nodes[id].selected;
         if(mw->modelController.model.mesh.nodes[id].selected)
+        {
             mw->modelController.model.mesh.nodes[id].pinned = true;
+            mw->modelController.model.mesh.nodes[id].intended_position = mw->modelController.model.mesh.nodes[id].xn;
+        }
         mw->modelController.model.UnsafeUpdateGeometry();
         this->GetInteractor()->Render();
     }
@@ -121,9 +124,8 @@ void SpecialSelector2D::OnMouseMove()
         for(icy::Node &nd : mw->modelController.model.mesh.nodes)
         {
             if(!nd.selected) continue;
-            nd.xn.x() -= delta[0];
-            nd.xn.y() -= delta[1];
-            nd.xt = nd.xn;
+            nd.intended_position.x() -= delta[0];
+            nd.intended_position.y() -= delta[1];
             nd.vn = Eigen::Vector2d::Zero();
         }
 

@@ -35,7 +35,7 @@ icy::Model::Model()
             glyph_hueLut->SetTableValue(i, (double)lutArrayBands[i][0], (double)lutArrayBands[i][1], (double)lutArrayBands[i][2], 1.0);
 
 
-    poly_data->SetPoints(points);
+    poly_data->SetPoints(points_manip);
     glyph_filter->SetInputData(poly_data);
     glyph_mapper->SetInputConnection(glyph_filter->GetOutputPort());
     glyph_mapper->UseLookupTableScalarRangeOn();
@@ -45,10 +45,6 @@ icy::Model::Model()
     actor_selected_nodes->GetProperty()->SetColor(0.1, 0.1, 0.1);
     actor_selected_nodes->GetProperty()->SetPointSize(5);
     glyph_int_data->SetName("glyph_int_data");
-
-
-
-
 
 }
 
@@ -64,6 +60,7 @@ void icy::Model::Reset(SimParams &prms)
 void icy::Model::UnsafeUpdateGeometry()
 {
     points->SetNumberOfPoints(mesh.nodes.size());
+    points_manip->SetNumberOfPoints(mesh.nodes.size());
     vtkIdType count=0;
     double x[3];
     for(icy::Node &nd : mesh.nodes)
@@ -71,9 +68,17 @@ void icy::Model::UnsafeUpdateGeometry()
         x[0]=nd.xn.x();
         x[1]=nd.xn.y();
         x[2]=0;
-        points->SetPoint(count++, x);
+        points->SetPoint(count, x);
+        if(nd.selected)
+        {
+            x[0]=nd.intended_position.x();
+            x[1]=nd.intended_position.y();
+        }
+        points_manip->SetPoint(count, x);
+        count++;
     }
     points->Modified();
+    points_manip->Modified();
 
 
     cellArray->Reset();
@@ -180,7 +185,7 @@ void icy::Model::InitializeLUT(int table=1)
                     (double)lutArrayTerrain[i][2], 1.0);
 }
 
-void icy::Model::InitialGuess(SimParams &prms, double timeStep)
+void icy::Model::InitialGuess(SimParams &prms, double timeStep, double timeStepFactor)
 {
     std::size_t nNodes = mesh.nodes.size();
 #pragma omp parallel for
@@ -189,6 +194,7 @@ void icy::Model::InitialGuess(SimParams &prms, double timeStep)
         icy::Node &nd = mesh.nodes[i];
         if(nd.pinned)
         {
+            if(nd.selected) nd.xt = (1/timeStepFactor)*nd.intended_position + (1-1/timeStepFactor)*nd.xn;
             nd.vn=Eigen::Vector2d::Zero();
             nd.x_hat = nd.xn;
         }
@@ -262,12 +268,12 @@ void icy::Model::AcceptTentativeValues(double timeStep)
     for(std::size_t i=0;i<nNodes;i++)
     {
         icy::Node &nd = mesh.nodes[i];
-        if(nd.pinned) { continue; }
-        Eigen::Vector2d dx = nd.xt-nd.xn;
         nd.xn = nd.xt;
-        //Eigen::Vector2d v_old = nd.vn;
-        nd.vn = dx/timeStep;
-        // nd.xn.x() += 0.001; // for testing
+        if(!nd.pinned)
+        {
+            Eigen::Vector2d dx = nd.xt-nd.xn;
+            nd.vn = dx/timeStep;
+        }
     }
     vtk_update_mutex.unlock();
 }

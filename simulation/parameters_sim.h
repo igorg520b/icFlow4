@@ -48,7 +48,7 @@ public:
 
     void Reset() {
         MaxSteps = 20000;
-        InitialTimeStep = 0.005;
+        InitialTimeStep = 0.05;
 
         // material parameters and physical constants
         Gravity = 9.81;
