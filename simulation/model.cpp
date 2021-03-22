@@ -45,6 +45,7 @@ icy::Model::Model()
     actor_selected_nodes->GetProperty()->SetColor(0.1, 0.1, 0.1);
     actor_selected_nodes->GetProperty()->SetPointSize(5);
     glyph_int_data->SetName("glyph_int_data");
+    InitializeLUT(2);
 
 }
 
@@ -117,7 +118,12 @@ void icy::Model::ChangeVisualizationOption(VisOpt option)
     VisualizingVariable = option;
 
 
-    if(VisualizingVariable == VisOpt::elem_area || VisualizingVariable == VisOpt::energy_density)
+    if(VisualizingVariable == VisOpt::elem_area
+            || VisualizingVariable == VisOpt::energy_density
+            || VisualizingVariable == VisOpt::stress_xx
+            || VisualizingVariable == VisOpt::stress_yy
+            || VisualizingVariable == VisOpt::stress_hydrostatic
+            || VisualizingVariable == VisOpt::non_symm_measure)
     {
         ugrid->GetPointData()->RemoveArray("visualized_values");
         ugrid->GetCellData()->AddArray(visualized_values);
@@ -160,6 +166,33 @@ void icy::Model::UpdateValues()
         visualized_values->SetNumberOfValues(mesh.elems.size());
         for(size_t i=0;i<mesh.elems.size();i++) visualized_values->SetValue(i, mesh.elems[i].strain_energy_density);
         break;
+
+    case stress_xx:
+        visualized_values->SetNumberOfValues(mesh.elems.size());
+        for(size_t i=0;i<mesh.elems.size();i++) visualized_values->SetValue(i, mesh.elems[i].CauchyStress(0,0));
+        break;
+
+    case stress_yy:
+        visualized_values->SetNumberOfValues(mesh.elems.size());
+        for(size_t i=0;i<mesh.elems.size();i++) visualized_values->SetValue(i, mesh.elems[i].CauchyStress(1,1));
+        break;
+
+    case stress_hydrostatic:
+        visualized_values->SetNumberOfValues(mesh.elems.size());
+        for(size_t i=0;i<mesh.elems.size();i++) visualized_values->SetValue(i, mesh.elems[i].CauchyStress.trace()/2);
+        break;
+
+    case non_symm_measure:
+        visualized_values->SetNumberOfValues(mesh.elems.size());
+        for(size_t i=0;i<mesh.elems.size();i++)
+        {
+            Element &elem = mesh.elems[i];
+            double value1 = elem.CauchyStress(0,1)-elem.CauchyStress(1,0);
+            double value = value1*value1;
+            visualized_values->SetValue(i, value);
+        }
+        break;
+
     default:
         break;
     }
@@ -173,7 +206,7 @@ void icy::Model::UpdateValues()
 }
 
 
-void icy::Model::InitializeLUT(int table=1)
+void icy::Model::InitializeLUT(int table)
 {
     const int n = 51;
     hueLut->SetNumberOfTableValues(n);
@@ -183,6 +216,11 @@ void icy::Model::InitializeLUT(int table=1)
             hueLut->SetTableValue(i, (double)lutArrayTerrain[i][0],
                     (double)lutArrayTerrain[i][1],
                     (double)lutArrayTerrain[i][2], 1.0);
+    else if(table==2)
+        for ( int i=0; i<n; i++)
+                hueLut->SetTableValue(i, (double)lutArrayTemperatureAdj[i][0],
+                        (double)lutArrayTemperatureAdj[i][1],
+                        (double)lutArrayTemperatureAdj[i][2], 1.0);
 }
 
 void icy::Model::InitialGuess(SimParams &prms, double timeStep, double timeStepFactor)

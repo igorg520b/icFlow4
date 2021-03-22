@@ -54,8 +54,9 @@ bool icy::Element::NeoHookeanElasticity(EquationOfMotionSolver &eq, SimParams &p
     double E = prms.YoungsModulus;
     double nu = prms.PoissonsRatio;
     double lambda = (E*nu)/((1.0+nu)*(1.0-2.0*nu)); // Lamé's first parameter
-    double K = E/(3.0*(1.0-2.0*nu));                // Bulk modulus
-    double mu = (K-lambda)*3.0/2.0;                 // Lamé's second parameter
+//    double K = E/(3.0*(1.0-2.0*nu));                // Bulk modulus
+//    double mu = (K-lambda)*3.0/2.0;                 // Lamé's second parameter
+    double mu = E/(2*(1+nu));                 // Lamé's second parameter - shear modulus
 
     double X1 = nds[0]->x_initial.x();
     double X2 = nds[1]->x_initial.x();
@@ -153,6 +154,10 @@ bool icy::Element::NeoHookeanElasticity(EquationOfMotionSolver &eq, SimParams &p
         }
     }
     eq.AddToConstTerm(strain_energy_density*W*hsq);
+
+    // Cauchy stress
+    CauchyStress = F*P.transpose()/J;
+
     return true;
 }
 

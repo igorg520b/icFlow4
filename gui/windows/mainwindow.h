@@ -142,6 +142,8 @@ private:
     vtkNew<vtkInteractorStyleRubberBand2D> interactorStyleRB2D;
     vtkNew<SpecialSelector2D> specialSelector2D;
 
+    vtkNew<vtkScalarBarActor> scalarBar;
+
     const QString wtitle = "icFlow4: Finite Element Simulation";
 
     friend class SpecialSelector2D;

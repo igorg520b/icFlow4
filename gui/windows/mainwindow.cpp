@@ -98,18 +98,32 @@ MainWindow::MainWindow(QWidget *parent)
         camera->SetViewAngle(vec[9]);
     }
     camera->Modified();
+
+    renderer->AddActor(scalarBar);
+    scalarBar->SetLookupTable(modelController.model.hueLut);
+
+    scalarBar->SetMaximumWidthInPixels(130);
+    scalarBar->SetBarRatio(0.07);
+    scalarBar->SetMaximumHeightInPixels(400);
+    scalarBar->GetPositionCoordinate()->SetCoordinateSystemToNormalizedDisplay();
+    scalarBar->GetPositionCoordinate()->SetValue(0.90,0.015, 0.0);
+    scalarBar->SetLabelFormat("%.1e");
+    scalarBar->GetLabelTextProperty()->BoldOff();
+    scalarBar->GetLabelTextProperty()->ItalicOff();
+    scalarBar->GetLabelTextProperty()->ShadowOff();
+    scalarBar->GetLabelTextProperty()->SetColor(0.1,0.1,0.1);
+//    scalarBar->GetLabelTextProperty()->SetFontFamilyToTimes();
+
     renderWindow->Render();
 
-//    ui->action_Load_Recent_on_Startup->setChecked(prefsGUI.LoadLastScene);
-
-//    comboBox_visualizations->setCurrentIndex(prefsGUI.VisualizationOption);
+    comboBox_visualizations->setCurrentIndex(settings.value("vis_option").toInt());
 }
 
 void MainWindow::showEvent( QShowEvent*)
 {
     pbrowser->setActiveObject(&modelController.prms);
     QSettings settings(m_sSettingsFile);
-    comboBox_visualizations->setCurrentIndex(settings.value("vis_option").toInt());
+//    comboBox_visualizations->setCurrentIndex(settings.value("vis_option").toInt());
     updateGUI();
     renderWindow->Render();
 }
@@ -218,9 +232,8 @@ void MainWindow::comboboxIndexChanged_visualizations(int index)
 {
     qDebug() << "comboboxIndexChanged_visualizations " << index;
     modelController.model.ChangeVisualizationOption((icy::Model::VisOpt)index);
+    scalarBar->SetVisibility(index != 0);
     renderWindow->Render();
-
-//    scalarBar->SetVisibility(prefsGUI.ShowScalarBar && prefsGUI.VisualizationOption!=0);
 }
 
 
