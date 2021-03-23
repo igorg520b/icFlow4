@@ -31,6 +31,7 @@ public:
     Eigen::Matrix<double, 6, 6> HE; // energy hessian
 
     Eigen::Matrix2d CauchyStress;
+    double principal_stress1, principal_stress2, max_shear_stress;
 
 private:
     void SpringModel(EquationOfMotionSolver &eq, SimParams &prms, double timeStep, Node *nd1, Node *nd2);

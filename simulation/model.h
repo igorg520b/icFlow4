@@ -56,7 +56,8 @@ class icy::Model : public QObject
 public:    
 
     // visualization options
-    enum VisOpt { none, elem_area, energy_density, stress_xx, stress_yy, stress_hydrostatic, non_symm_measure };
+    enum VisOpt { none, elem_area, energy_density, stress_xx, stress_yy, stress_hydrostatic, non_symm_measure,
+                ps1, ps2, shear_stress};
     Q_ENUM(VisOpt)
 
     Model();

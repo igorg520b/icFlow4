@@ -54,10 +54,9 @@ bool icy::Element::NeoHookeanElasticity(EquationOfMotionSolver &eq, SimParams &p
     double E = prms.YoungsModulus;
     double nu = prms.PoissonsRatio;
     double lambda = (E*nu)/((1.0+nu)*(1.0-2.0*nu)); // Lamé's first parameter
-//    double K = E/(3.0*(1.0-2.0*nu));                // Bulk modulus
-//    double mu = (K-lambda)*3.0/2.0;                 // Lamé's second parameter
     double mu = E/(2*(1+nu));                 // Lamé's second parameter - shear modulus
 
+    // initial positions of the vertices
     double X1 = nds[0]->x_initial.x();
     double X2 = nds[1]->x_initial.x();
     double X3 = nds[2]->x_initial.x();
@@ -65,6 +64,7 @@ bool icy::Element::NeoHookeanElasticity(EquationOfMotionSolver &eq, SimParams &p
     double Y2 = nds[1]->x_initial.y();
     double Y3 = nds[2]->x_initial.y();
 
+    // current positions of the verticies
     double x1 = nds[0]->xt.x();
     double x2 = nds[1]->xt.x();
     double x3 = nds[2]->xt.x();
@@ -76,15 +76,15 @@ bool icy::Element::NeoHookeanElasticity(EquationOfMotionSolver &eq, SimParams &p
 
     // reference shape matrix
     Dm << X1-X3, X2-X3, Y1-Y3, Y2-Y3;
-    double W = prms.Thickness*Dm.determinant()/2;   // element's "volume"
+    double W = prms.Thickness*Dm.determinant()/2;   // element's initial "volume"
     Dm_inv = Dm.inverse();
 
     // deformed shape matrix
     Ds << x1-x3, x2-x3, y1-y3, y2-y3;
     if(Ds.determinant()<=0) return false; // mesh is inverted
+
     F = Ds*Dm_inv;    // deformation gradient
     double J = F.determinant();     // represents the change of volume in comparison with the reference
-    if(J<=0) throw std::runtime_error("J<=0");
     FT = F.transpose();
     Finv = F.inverse();
     FinvT = Finv.transpose();
@@ -98,15 +98,11 @@ bool icy::Element::NeoHookeanElasticity(EquationOfMotionSolver &eq, SimParams &p
     DDs[4] << -1, -1, 0, 0; // x3
     DDs[5] << 0, 0, -1, -1; // y3
 
-    Eigen::Matrix2d DF[6];  // derivatives of F with respect to x1,y1,x2,y2,x3,y3
-    for(int i=0;i<6;i++) DF[i] = DDs[i]*Dm_inv;
-
 
     double log_J = log(J);
-    if(std::isnan(log_J)) throw std::runtime_error("J isnan");
     strain_energy_density = (mu/2.0)*((F*FT).trace()-2.0)-mu*log_J+(lambda/2.0)*log_J*log_J;
 
-    // First Piola - Kirchhoff stress tensor
+    // First Piola-Kirchhoff stress tensor
     Eigen::Matrix2d P = F*mu + FinvT*(lambda*log_J-mu);
 
     // forces on nodes 1 and 2 (inverted sign)
@@ -123,7 +119,9 @@ bool icy::Element::NeoHookeanElasticity(EquationOfMotionSolver &eq, SimParams &p
     // energy Hessian, 6x6 symmetric matrix
     for(int i=0;i<6;i++)
     {
-        Eigen::Matrix2d dP = mu*DF[i] + (mu-lambda*log_J)*FinvT*DF[i].transpose()*FinvT + lambda*(Finv*DF[i]).trace()*FinvT;
+        Eigen::Matrix2d DF_i = DDs[i]*Dm_inv; // derivative of F with respect to x_i
+
+        Eigen::Matrix2d dP = mu*DF_i + (mu-lambda*log_J)*FinvT*DF_i.transpose()*FinvT + lambda*(Finv*DF_i).trace()*FinvT;
         Eigen::Matrix2d dH = W*dP*Dm_inv.transpose();
         HE(0,i) = dH(0,0);
         HE(1,i) = dH(1,0);
@@ -133,8 +131,11 @@ bool icy::Element::NeoHookeanElasticity(EquationOfMotionSolver &eq, SimParams &p
         HE(5,i) = -dH(1,0)-dH(1,1);
     }
 
-    double hsq = h*h;
+
+
+
     // assemble the equation of motion
+    double hsq = h*h;
     for(int i=0;i<3;i++)
     {
         int row = nds[i]->eqId;
@@ -157,6 +158,13 @@ bool icy::Element::NeoHookeanElasticity(EquationOfMotionSolver &eq, SimParams &p
 
     // Cauchy stress
     CauchyStress = F*P.transpose()/J;
+
+    double sx = CauchyStress(0,0);
+    double sy = CauchyStress(1,1);
+    double tauxy = (CauchyStress(0,1)+CauchyStress(1,0))/2;
+    max_shear_stress = sqrt((sx-sy)*(sx-sy)/4 + tauxy*tauxy);
+    principal_stress1 = (sx+sy)/2 + max_shear_stress;
+    principal_stress2 = (sx+sy)/2 - max_shear_stress;
 
     return true;
 }

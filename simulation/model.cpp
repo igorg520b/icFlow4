@@ -118,12 +118,14 @@ void icy::Model::ChangeVisualizationOption(VisOpt option)
     VisualizingVariable = option;
 
 
-    if(VisualizingVariable == VisOpt::elem_area
-            || VisualizingVariable == VisOpt::energy_density
-            || VisualizingVariable == VisOpt::stress_xx
-            || VisualizingVariable == VisOpt::stress_yy
-            || VisualizingVariable == VisOpt::stress_hydrostatic
-            || VisualizingVariable == VisOpt::non_symm_measure)
+    if(VisualizingVariable == VisOpt::none)
+    {
+        dataSetMapper->ScalarVisibilityOff();
+        ugrid->GetPointData()->RemoveArray("visualized_values");
+        ugrid->GetCellData()->RemoveArray("visualized_values");
+        return;
+    }
+    else
     {
         ugrid->GetPointData()->RemoveArray("visualized_values");
         ugrid->GetCellData()->AddArray(visualized_values);
@@ -131,13 +133,7 @@ void icy::Model::ChangeVisualizationOption(VisOpt option)
         dataSetMapper->SetScalarModeToUseCellData();
         dataSetMapper->ScalarVisibilityOn();
     }
-    else
-    {
-        dataSetMapper->ScalarVisibilityOff();
-        ugrid->GetPointData()->RemoveArray("visualized_values");
-        ugrid->GetCellData()->RemoveArray("visualized_values");
-        return;
-    }
+
 
 
     UpdateValues();
@@ -191,6 +187,21 @@ void icy::Model::UpdateValues()
             double value = value1*value1;
             visualized_values->SetValue(i, value);
         }
+        break;
+
+    case ps1:
+        visualized_values->SetNumberOfValues(mesh.elems.size());
+        for(size_t i=0;i<mesh.elems.size();i++) visualized_values->SetValue(i, mesh.elems[i].principal_stress1);
+        break;
+
+    case ps2:
+        visualized_values->SetNumberOfValues(mesh.elems.size());
+        for(size_t i=0;i<mesh.elems.size();i++) visualized_values->SetValue(i, mesh.elems[i].principal_stress2);
+        break;
+
+    case shear_stress:
+        visualized_values->SetNumberOfValues(mesh.elems.size());
+        for(size_t i=0;i<mesh.elems.size();i++) visualized_values->SetValue(i, mesh.elems[i].max_shear_stress);
         break;
 
     default:
