@@ -34,6 +34,7 @@ public:
     // nodes, elements and edges
     std::vector<icy::Node> nodes;
     std::vector<icy::Element> elems;
+    std::vector<std::pair<int,int>> boundary;
 
     // at the "setting up the scene" stage - remesh 2d floe if needed
     void Reset(double CharacteristicLengthMax);

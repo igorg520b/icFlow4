@@ -47,6 +47,16 @@ icy::Model::Model()
     glyph_int_data->SetName("glyph_int_data");
     InitializeLUT(2);
 
+    ugrid_boundary->SetPoints(points);
+    dataSetMapper_boundary->SetInputData(ugrid_boundary);
+    actor_boundary->SetMapper(dataSetMapper_boundary);
+    actor_boundary->GetProperty()->EdgeVisibilityOn();
+    actor_boundary->GetProperty()->VertexVisibilityOn();
+    actor_boundary->GetProperty()->SetColor(0,0,0.4);
+    actor_boundary->GetProperty()->SetEdgeColor(0,0,0.4);
+    actor_boundary->GetProperty()->SetVertexColor(0.4,0,0);
+    actor_boundary->GetProperty()->SetPointSize(5);
+    actor_boundary->GetProperty()->SetLineWidth(3);
 }
 
 void icy::Model::Reset(SimParams &prms)
@@ -106,6 +116,18 @@ void icy::Model::UnsafeUpdateGeometry()
     glyph_mapper->SetScalarModeToUsePointData();
     poly_data->GetPointData()->AddArray(glyph_int_data);
     poly_data->GetPointData()->SetActiveScalars("glyph_int_data");
+
+    // boundary
+    cellArray_boundary->Reset();
+    for(unsigned i=0;i<mesh.boundary.size();i++)
+    {
+        int idx1 = mesh.boundary[i].first;
+        int idx2 = mesh.boundary[i].second;
+        pts2[0]=idx1;
+        pts2[1]=idx2;
+        cellArray_boundary->InsertNextCell(2, pts2);
+    }
+    ugrid_boundary->SetCells(VTK_LINE, cellArray_boundary);
 
     if(VisualizingVariable != VisOpt::none) UpdateValues();
 }
@@ -204,6 +226,11 @@ void icy::Model::UpdateValues()
         for(size_t i=0;i<mesh.elems.size();i++) visualized_values->SetValue(i, mesh.elems[i].max_shear_stress);
         break;
 
+    case volume_change:
+        visualized_values->SetNumberOfValues(mesh.elems.size());
+        for(size_t i=0;i<mesh.elems.size();i++) visualized_values->SetValue(i, mesh.elems[i].volume_change);
+        break;
+
     default:
         break;
     }
@@ -214,6 +241,12 @@ void icy::Model::UpdateValues()
     double minmax[2];
     visualized_values->GetValueRange(minmax);
     hueLut->SetTableRange(minmax[0], minmax[1]);
+    if(VisualizingVariable == volume_change)
+    {
+        double range = minmax[1]-minmax[0];
+        hueLut->SetTableRange(1-range*0.75,1+range*0.75);
+    }
+
 }
 
 

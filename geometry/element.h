@@ -32,6 +32,7 @@ public:
 
     Eigen::Matrix2d CauchyStress;
     double principal_stress1, principal_stress2, max_shear_stress;
+    double volume_change;
 
 private:
     void SpringModel(EquationOfMotionSolver &eq, SimParams &prms, double timeStep, Node *nd1, Node *nd2);

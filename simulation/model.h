@@ -57,7 +57,7 @@ public:
 
     // visualization options
     enum VisOpt { none, elem_area, energy_density, stress_xx, stress_yy, stress_hydrostatic, non_symm_measure,
-                ps1, ps2, shear_stress};
+                ps1, ps2, shear_stress, volume_change};
     Q_ENUM(VisOpt)
 
     Model();
@@ -74,6 +74,7 @@ public:
 
     vtkNew<vtkActor> actor_mesh;
     vtkNew<vtkActor> actor_selected_nodes;
+    vtkNew<vtkActor> actor_boundary;
 
     EquationOfMotionSolver eqOfMotion;
     vtkNew<vtkLookupTable> hueLut;
@@ -93,11 +94,18 @@ private:
     vtkNew<vtkCellArray> cellArray;
     vtkNew<vtkDataSetMapper> dataSetMapper;
 
+    // nodes drawn separately
     vtkNew<vtkVertexGlyphFilter> glyph_filter;
     vtkNew<vtkPolyDataMapper> glyph_mapper;
     vtkNew<vtkPolyData> poly_data;
     vtkNew<vtkIntArray> glyph_int_data;
     vtkNew<vtkLookupTable> glyph_hueLut;
+
+    // boundary
+    vtkNew<vtkUnstructuredGrid> ugrid_boundary;
+    vtkNew<vtkCellArray> cellArray_boundary;
+//    vtkNew<vtkPolyDataMapper> boundary_mapper;
+    vtkNew<vtkDataSetMapper> dataSetMapper_boundary;
 
 
     // visualizing variables

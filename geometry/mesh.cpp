@@ -17,6 +17,7 @@ void icy::Mesh::Reset(double CharacteristicLengthMax)
 {
     elems.clear();
     nodes.clear();
+    boundary.clear();
 
     // invoke Gmsh
     gmsh::clear();
@@ -62,7 +63,10 @@ void icy::Mesh::Reset(double CharacteristicLengthMax)
     // elems
     std::vector<std::size_t> trisTags, nodeTagsInTris;
     gmsh::model::mesh::getElementsByType(2, trisTags, nodeTagsInTris);
-    gmsh::clear();
+
+    // boundary
+    std::vector<std::size_t> edgeTags, nodeTagsInEdges;
+    gmsh::model::mesh::getElementsByType(1, edgeTags, nodeTagsInEdges);
 
     // nodeTags, nodeCoords, nodeTagsInTris => nodes, elems
     std::map<std::size_t, int> nodeTagsMap1; // nodeTag -> its sequential position in nodeTag
@@ -109,7 +113,17 @@ void icy::Mesh::Reset(double CharacteristicLengthMax)
             if(elem.area_initial < 0) throw std::runtime_error("icy::Mesh::Reset - error");
         }
         for(int j=0;j<3;j++) elem.nds[j]->area += elem.area_initial/3;
-
     }
+
+    boundary.resize(nodeTagsInEdges.size()/2);
+    for(std::size_t i=0;i<nodeTagsInEdges.size()/2;i++)
+    {
+        int idx1 = mtags[nodeTagsInEdges[i*2+0]];
+        int idx2 = mtags[nodeTagsInEdges[i*2+1]];
+        boundary[i]=std::make_pair(idx1,idx2);
+    }
+
+    gmsh::clear();
+
 }
 

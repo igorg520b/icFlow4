@@ -26,7 +26,9 @@ MainWindow::MainWindow(QWidget *parent)
 
     renderer->SetBackground(colors->GetColor3d("White").GetData());
     renderer->AddActor(modelController.model.actor_selected_nodes);
+    renderer->AddActor(modelController.model.actor_boundary);
     renderer->AddActor(modelController.model.actor_mesh);
+
 
     renderWindow->AddRenderer(renderer);
     renderWindow->GetInteractor()->SetInteractorStyle(specialSelector2D);

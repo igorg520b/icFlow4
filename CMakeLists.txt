@@ -99,8 +99,8 @@ add_executable(fl4
 
 
 target_include_directories(fl4 PUBLIC gui geometry simulation gui/propertybrowser)
-target_include_directories(fl4 PUBLIC gui gui/objectpropertybrowser gui/windows)
-target_include_directories(fl4 PUBLIC gui gui/interactor)
+target_include_directories(fl4 PUBLIC gui/objectpropertybrowser gui/windows)
+target_include_directories(fl4 PUBLIC gui/interactor)
 
 # some paths need to be set manually
 target_include_directories(fl4 PUBLIC /home/s2/Projects-libraries/eigen)

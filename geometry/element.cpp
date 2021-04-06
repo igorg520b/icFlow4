@@ -85,6 +85,7 @@ bool icy::Element::NeoHookeanElasticity(EquationOfMotionSolver &eq, SimParams &p
 
     F = Ds*Dm_inv;    // deformation gradient
     double J = F.determinant();     // represents the change of volume in comparison with the reference
+    volume_change = J;
     FT = F.transpose();
     Finv = F.inverse();
     FinvT = Finv.transpose();
@@ -132,20 +133,12 @@ bool icy::Element::NeoHookeanElasticity(EquationOfMotionSolver &eq, SimParams &p
     }
 
 
-
-
     // assemble the equation of motion
     double hsq = h*h;
     for(int i=0;i<3;i++)
     {
         int row = nds[i]->eqId;
         Eigen::Vector2d locDE = DE.block(i*2,0,2,1)*hsq;
-        if(std::isnan(locDE.x()) || std::isnan(locDE.y()))
-        {
-            std::cout << "isnan elem " << std::endl;
-            throw std::runtime_error("isnan elem");
-        }
-
         eq.AddToC(row, locDE);
         for(int j=0;j<3;j++)
         {
@@ -155,6 +148,7 @@ bool icy::Element::NeoHookeanElasticity(EquationOfMotionSolver &eq, SimParams &p
         }
     }
     eq.AddToConstTerm(strain_energy_density*W*hsq);
+
 
     // Cauchy stress
     CauchyStress = F*P.transpose()/J;
