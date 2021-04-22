@@ -57,6 +57,36 @@ icy::Model::Model()
     actor_boundary->GetProperty()->SetVertexColor(0.4,0,0);
     actor_boundary->GetProperty()->SetPointSize(5);
     actor_boundary->GetProperty()->SetLineWidth(3);
+
+
+    // indenter
+
+    ugrid_indenter->SetPoints(points_indenter);
+    dataSetMapper_indenter->SetInputData(ugrid_indenter);
+
+    actor_indenter->SetMapper(dataSetMapper_indenter);
+    actor_indenter->GetProperty()->EdgeVisibilityOn();
+    actor_indenter->GetProperty()->VertexVisibilityOn();
+    actor_indenter->GetProperty()->SetColor(0.3,0,0.4);
+    actor_indenter->GetProperty()->SetEdgeColor(0.3,0,0.4);
+    actor_indenter->GetProperty()->SetVertexColor(0.4,0,0);
+    actor_indenter->GetProperty()->SetPointSize(5);
+    actor_indenter->GetProperty()->SetLineWidth(3);
+
+    // indenter_intended
+
+    ugrid_indenter_intended->SetPoints(points_indenter_intended);
+    dataSetMapper_indenter_intended->SetInputData(ugrid_indenter_intended);
+
+    actor_indenter_intended->SetMapper(dataSetMapper_indenter_intended);
+    actor_indenter_intended->GetProperty()->EdgeVisibilityOn();
+    actor_indenter_intended->GetProperty()->VertexVisibilityOn();
+    actor_indenter_intended->GetProperty()->SetColor(0.3,0,0.4);
+    actor_indenter_intended->GetProperty()->SetEdgeColor(0.6,0,0.04);
+    actor_indenter_intended->GetProperty()->SetVertexColor(0.04,0,0);
+    actor_indenter_intended->GetProperty()->SetPointSize(2);
+    actor_indenter_intended->GetProperty()->SetLineWidth(1);
+
 }
 
 void icy::Model::Reset(SimParams &prms)
@@ -128,6 +158,55 @@ void icy::Model::UnsafeUpdateGeometry()
         cellArray_boundary->InsertNextCell(2, pts2);
     }
     ugrid_boundary->SetCells(VTK_LINE, cellArray_boundary);
+
+    // indenter
+    points_indenter->SetNumberOfPoints(mesh.nodes_indenter.size());
+    count=0;
+    for(icy::Node &nd : mesh.nodes_indenter)
+    {
+        x[0]=nd.xn.x();
+        x[1]=nd.xn.y();
+        x[2]=0;
+        points_indenter->SetPoint(count, x);
+        count++;
+    }
+    points_indenter->Modified();
+
+    cellArray_indenter->Reset();
+    for(unsigned i=0;i<mesh.boundary_indenter.size();i++)
+    {
+        int idx1 = mesh.boundary_indenter[i].first;
+        int idx2 = mesh.boundary_indenter[i].second;
+        pts2[0]=idx1;
+        pts2[1]=idx2;
+        cellArray_indenter->InsertNextCell(2, pts2);
+    }
+    ugrid_indenter->SetCells(VTK_LINE, cellArray_indenter);
+
+    // indenter_intended
+    points_indenter_intended->SetNumberOfPoints(mesh.nodes_indenter.size());
+    count=0;
+    for(icy::Node &nd : mesh.nodes_indenter)
+    {
+        x[0]=nd.intended_position.x();
+        x[1]=nd.intended_position.y();
+        x[2]=0;
+        points_indenter_intended->SetPoint(count, x);
+        count++;
+    }
+    points_indenter_intended->Modified();
+
+    cellArray_indenter_intended->Reset();
+    for(unsigned i=0;i<mesh.boundary_indenter.size();i++)
+    {
+        int idx1 = mesh.boundary_indenter[i].first;
+        int idx2 = mesh.boundary_indenter[i].second;
+        pts2[0]=idx1;
+        pts2[1]=idx2;
+        cellArray_indenter_intended->InsertNextCell(2, pts2);
+    }
+    ugrid_indenter_intended->SetCells(VTK_LINE, cellArray_indenter_intended);
+
 
     if(VisualizingVariable != VisOpt::none) UpdateValues();
 }
@@ -295,6 +374,15 @@ void icy::Model::InitialGuess(SimParams &prms, double timeStep, double timeStepF
         else nd.eqId = freeNodeCount++;
     }
 
+    nNodes = mesh.nodes_indenter.size();
+#pragma omp parallel for
+    for(std::size_t i=0;i<nNodes;i++)
+    {
+        icy::Node &nd = mesh.nodes_indenter[i];
+        nd.xt = (1/timeStepFactor)*nd.intended_position + (1-1/timeStepFactor)*nd.xn;
+        nd.vn=Eigen::Vector2d::Zero();
+        nd.x_hat = nd.xn;
+    }
 }
 
 
@@ -324,6 +412,8 @@ bool icy::Model::AssembleAndSolve(SimParams &prms, double timeStep)
 #pragma omp parallel for
     for(std::size_t i=0;i<nNodes;i++) mesh.nodes[i].ComputeEquationEntries(eqOfMotion, prms, timeStep);
 
+    mesh.DetectContactPairs(prms.InteractionDistance);
+
     // solve
     bool result = eqOfMotion.Solve();
 
@@ -350,12 +440,24 @@ void icy::Model::AcceptTentativeValues(double timeStep)
     for(std::size_t i=0;i<nNodes;i++)
     {
         icy::Node &nd = mesh.nodes[i];
-        nd.xn = nd.xt;
         if(!nd.pinned)
         {
             Eigen::Vector2d dx = nd.xt-nd.xn;
             nd.vn = dx/timeStep;
         }
+        nd.xn = nd.xt;
     }
+
+    nNodes = mesh.nodes_indenter.size();
+#pragma omp parallel for
+    for(std::size_t i=0;i<nNodes;i++)
+    {
+        icy::Node &nd = mesh.nodes_indenter[i];
+        Eigen::Vector2d dx = nd.xt-nd.xn;
+        nd.vn = dx/timeStep;
+        nd.xn = nd.xt;
+    }
+
     vtk_update_mutex.unlock();
 }
+

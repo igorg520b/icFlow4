@@ -98,7 +98,7 @@ public:
 
 
 private slots:
-
+    void sliderValueChanged(int val);
     void comboboxIndexChanged_visualizations(int index);
 
     void on_action_quit_triggered();
@@ -121,6 +121,7 @@ private:
     QLabel *statusLabelAttempt;             // attempt # at advancing a time step
     QLabel *labelStepCount;
     QComboBox *comboBox_visualizations;
+    QSlider *slider1;
 
     // splitter and the right side window
     QSplitter *splitter_main;

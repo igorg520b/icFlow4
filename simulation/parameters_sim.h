@@ -32,6 +32,7 @@ class icy::SimParams : public QObject
     Q_PROPERTY(double p_PoissonsRatio MEMBER PoissonsRatio NOTIFY propertyChanged)
 
     Q_PROPERTY(double p_Thickness MEMBER Thickness NOTIFY propertyChanged)
+    Q_PROPERTY(double p_InteractionDistance MEMBER InteractionDistance NOTIFY propertyChanged)
 
     // meshing
     Q_PROPERTY(double s_ElemSize MEMBER CharacteristicLength NOTIFY propertyChanged)
@@ -43,6 +44,7 @@ public:
     double CharacteristicLength;
 
     double ConvergenceEpsilon, ConvergenceCutoff;
+    double InteractionDistance;
 
     SimParams() { Reset(); }
 
@@ -57,6 +59,7 @@ public:
 
         PoissonsRatio = 0.3;
         YoungsModulus = 50;
+        InteractionDistance = 0.1;
 
         CharacteristicLength = 0.05;
         ConvergenceEpsilon = 1e-2;

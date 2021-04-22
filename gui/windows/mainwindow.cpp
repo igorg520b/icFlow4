@@ -25,10 +25,11 @@ MainWindow::MainWindow(QWidget *parent)
 
 
     renderer->SetBackground(colors->GetColor3d("White").GetData());
-    renderer->AddActor(modelController.model.actor_selected_nodes);
     renderer->AddActor(modelController.model.actor_boundary);
+    renderer->AddActor(modelController.model.actor_indenter);
+    renderer->AddActor(modelController.model.actor_indenter_intended);
     renderer->AddActor(modelController.model.actor_mesh);
-//
+    renderer->AddActor(modelController.model.actor_selected_nodes);
 
     renderWindow->AddRenderer(renderer);
     renderWindow->GetInteractor()->SetInteractorStyle(specialSelector2D);
@@ -63,6 +64,13 @@ MainWindow::MainWindow(QWidget *parent)
 
 
     // slider
+    slider1 = new QSlider(Qt::Horizontal);
+    ui->toolBar->addWidget(slider1);
+    slider1->setTracking(true);
+    slider1->setMinimum(0);
+    slider1->setMaximum(100);
+    connect(slider1, SIGNAL(valueChanged(int)), this, SLOT(sliderValueChanged(int)));
+
     labelStepCount = new QLabel();
 //    ui->toolBar->addWidget(labelStepCount);
 
@@ -126,8 +134,9 @@ void MainWindow::showEvent( QShowEvent*)
     pbrowser->setActiveObject(&modelController.prms);
     QSettings settings(m_sSettingsFile);
 //    comboBox_visualizations->setCurrentIndex(settings.value("vis_option").toInt());
+    sliderValueChanged(0);
     updateGUI();
-    renderWindow->Render();
+//    renderWindow->Render();
 }
 
 
@@ -240,7 +249,20 @@ void MainWindow::comboboxIndexChanged_visualizations(int index)
 
 
 
+void MainWindow::sliderValueChanged(int val)
+{
+//    qDebug() << "slider " << val;
+    double offset = 0.5 * 0.01 * val;
+    unsigned n = modelController.model.mesh.nodes_indenter.size();
+    Eigen::Vector2d y_direction = Eigen::Vector2d(0,-1.0);
+    for(unsigned i=0;i<n;i++)
+    {
+        icy::Node &nd = modelController.model.mesh.nodes_indenter[i];
+        nd.intended_position = nd.x_initial + offset*y_direction;
+    }
+    updateGUI();
 
+}
 
 
 

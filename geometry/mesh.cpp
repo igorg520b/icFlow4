@@ -5,12 +5,8 @@
 #include <iterator>
 #include <gmsh.h>
 
-//namespace model = gmsh::model;
-//namespace factory = gmsh::model::occ;
 
-// code from icy::Geometry class that changes less often
-
-#include <bits/stdc++.h>
+//#include <bits/stdc++.h>
 
 
 void icy::Mesh::Reset(double CharacteristicLengthMax)
@@ -115,15 +111,127 @@ void icy::Mesh::Reset(double CharacteristicLengthMax)
         for(int j=0;j<3;j++) elem.nds[j]->area += elem.area_initial/3;
     }
 
+    std::unordered_set<int> set_nds; // set of boundary nodes
     boundary.resize(nodeTagsInEdges.size()/2);
     for(std::size_t i=0;i<nodeTagsInEdges.size()/2;i++)
     {
         int idx1 = mtags[nodeTagsInEdges[i*2+0]];
         int idx2 = mtags[nodeTagsInEdges[i*2+1]];
         boundary[i]=std::make_pair(idx1,idx2);
+        set_nds.insert(idx1);
+        set_nds.insert(idx2);
     }
 
-    gmsh::clear();
+    deformable_boundary_nodes.resize(set_nds.size());
+    std::copy(set_nds.begin(), set_nds.end(), deformable_boundary_nodes.begin());
+
+    GenrateIndenter(CharacteristicLengthMax);
 
 }
 
+
+void icy::Mesh::GenrateIndenter(double CharacteristicLengthMax)
+{
+    gmsh::clear();
+    gmsh::option::setNumber("General.Terminal", 1);
+    gmsh::model::add("block1");
+
+    double height = 1;
+    double radius = 0.15;
+//    int point1 = gmsh::model::occ::addPoint(0, height+radius*1.1, 0, 1.0);
+
+    int ellipseTag = gmsh::model::occ::addEllipse(0, height+radius*1.1, 0, radius, radius/2);
+    gmsh::model::occ::synchronize();
+
+    gmsh::option::setNumber("Mesh.CharacteristicLengthMax", CharacteristicLengthMax);
+    gmsh::option::setNumber("Mesh.CharacteristicLengthExtendFromBoundary",0);
+    gmsh::model::mesh::generate(2);
+
+    // nodes
+    std::vector<std::size_t> nodeTags;
+    std::vector<double> nodeCoords, parametricCoords;
+    gmsh::model::mesh::getNodes(nodeTags, nodeCoords, parametricCoords);
+//    std::cout << "nds " << nodeTags.size() << std::endl;
+
+    std::map<std::size_t, int> nodeTagsMap1; // nodeTag -> its sequential position in nodeTag
+    for(std::size_t i=0;i<nodeTags.size();i++) nodeTagsMap1[nodeTags[i]] = i;
+
+    // boundary
+    std::vector<std::size_t> edgeTags, nodeTagsInEdges;
+    gmsh::model::mesh::getElementsByType(1, edgeTags, nodeTagsInEdges);
+    std::unordered_set<unsigned> boundary_nds_idxs;
+    for(unsigned i=0;i<edgeTags.size();i++)
+    {
+        boundary_nds_idxs.insert(nodeTagsInEdges[i*2+0]);
+        boundary_nds_idxs.insert(nodeTagsInEdges[i*2+1]);
+    }
+
+
+    std::map<std::size_t, int> nodeTagsMap2; // nodeTag -> its sequential position in nodes_indenter
+    unsigned count = 0;
+    nodes_indenter.resize(boundary_nds_idxs.size());
+    for(const unsigned tag : boundary_nds_idxs)
+    {
+        int idx1 = nodeTagsMap1[tag];
+        double x = nodeCoords[idx1*3+0];
+        double y = nodeCoords[idx1*3+1];
+
+        nodeTagsMap2[tag]=count;
+
+        icy::Node &nd = nodes_indenter[count];
+        nd.Reset();
+        nd.id = count;
+        nd.x_initial << x, y;
+        nd.xt = nd.xn = nd.x_initial;
+        nd.pinned=true;
+
+        count++;
+    }
+
+    boundary_indenter.clear();
+    for(unsigned i=0;i<edgeTags.size();i++)
+    {
+        int idx1 = nodeTagsInEdges[i*2+0];
+        int idx2 = nodeTagsInEdges[i*2+1];
+        boundary_indenter.push_back(std::make_pair(nodeTagsMap2[idx1],nodeTagsMap2[idx2]));
+    }
+
+}
+
+
+void icy::Mesh::DetectContactPairs(double distance_threshold)
+{
+
+    indenter_boundary_vs_deformable_nodes.clear();
+    deformable_boundary_vs_indenter_nodes.clear();
+
+    for(unsigned b_idx=0; b_idx<boundary_indenter.size(); b_idx++)
+        for(unsigned n_idx=0; n_idx<deformable_boundary_nodes.size(); n_idx++)
+        {
+            Interaction i;
+            i.ndA_idx = boundary_indenter[b_idx].first;
+            i.ndB_idx = boundary_indenter[b_idx].second;
+            i.ndP_idx = deformable_boundary_nodes[n_idx];
+
+            icy::Node &ndA = nodes_indenter[i.ndA_idx];
+            icy::Node &ndB = nodes_indenter[i.ndB_idx];
+            icy::Node &ndP = nodes[i.ndP_idx];
+
+            i.dist = SegmentPointDistance(ndA.xt, ndB.xt, ndP.xt, i.t);
+            if(i.dist <= distance_threshold)
+                indenter_boundary_vs_deformable_nodes.push_back(i);
+        }
+
+    qDebug() << "icy::Mesh::DetectContactPairs(): ib_dn " << indenter_boundary_vs_deformable_nodes.size();
+}
+
+double icy::Mesh::SegmentPointDistance(Eigen::Vector2d A, Eigen::Vector2d B, Eigen::Vector2d P, double &t)
+{
+    Eigen::Vector2d seg = B-A;
+    Eigen::Vector2d v = P-A;
+    t = v.dot(seg)/seg.squaredNorm();
+    t = std::clamp(t, 0.0, 1.0);
+    Eigen::Vector2d D = A+seg*t;
+    double dist = (D-P).norm();
+    return dist;
+}

@@ -75,6 +75,8 @@ public:
     vtkNew<vtkActor> actor_mesh;
     vtkNew<vtkActor> actor_selected_nodes;
     vtkNew<vtkActor> actor_boundary;
+    vtkNew<vtkActor> actor_indenter;
+    vtkNew<vtkActor> actor_indenter_intended;
 
     EquationOfMotionSolver eqOfMotion;
     vtkNew<vtkLookupTable> hueLut;
@@ -107,6 +109,17 @@ private:
 //    vtkNew<vtkPolyDataMapper> boundary_mapper;
     vtkNew<vtkDataSetMapper> dataSetMapper_boundary;
 
+    // indenter
+    vtkNew<vtkPoints> points_indenter;
+    vtkNew<vtkUnstructuredGrid> ugrid_indenter;
+    vtkNew<vtkCellArray> cellArray_indenter;
+    vtkNew<vtkDataSetMapper> dataSetMapper_indenter;
+
+    // indenter-intended
+    vtkNew<vtkPoints> points_indenter_intended;
+    vtkNew<vtkUnstructuredGrid> ugrid_indenter_intended;
+    vtkNew<vtkCellArray> cellArray_indenter_intended;
+    vtkNew<vtkDataSetMapper> dataSetMapper_indenter_intended;
 
     // visualizing variables
     vtkNew<vtkDoubleArray> visualized_values;
