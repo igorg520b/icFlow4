@@ -28,8 +28,9 @@ class icy::SimParams : public QObject
     // material parameters and physical constants
     Q_PROPERTY(double p_Gravity MEMBER Gravity NOTIFY propertyChanged)
     Q_PROPERTY(double p_Density MEMBER Density NOTIFY propertyChanged)
-    Q_PROPERTY(double p_YoungsModulus MEMBER YoungsModulus NOTIFY propertyChanged)
-    Q_PROPERTY(double p_PoissonsRatio MEMBER PoissonsRatio NOTIFY propertyChanged)
+    Q_PROPERTY(double p_YoungsModulus READ getYoungsModulus WRITE setYoungsModulus)
+    Q_PROPERTY(double p_PoissonsRatio READ getPoissonsRatio WRITE setPoissonsRatio)
+    Q_PROPERTY(double p_Kappa READ getKappa)
 
     Q_PROPERTY(double p_Thickness MEMBER Thickness NOTIFY propertyChanged)
     Q_PROPERTY(double p_InteractionDistance MEMBER InteractionDistance NOTIFY propertyChanged)
@@ -46,9 +47,36 @@ public:
     double ConvergenceEpsilon, ConvergenceCutoff;
     double InteractionDistance;
 
+    double lambda, mu, Kappa;
+    double getKappa() {return Kappa;}
+
+    double getYoungsModulus() {return YoungsModulus;}
+    void setYoungsModulus(double ym)
+    {
+        YoungsModulus=ym;
+        RecomputeLamdaMuAndKappa();
+    }
+
+    double getPoissonsRatio() {return PoissonsRatio;}
+    void setPoissonsRatio(double nu)
+    {
+        PoissonsRatio=nu;
+        RecomputeLamdaMuAndKappa();
+    }
+
+    void RecomputeLamdaMuAndKappa()
+    {
+        lambda = (YoungsModulus*PoissonsRatio)/((1.0+PoissonsRatio)*(1.0-2.0*PoissonsRatio)); // Lamé's first parameter
+        mu = YoungsModulus/(2*(1+PoissonsRatio));                 // Lamé's second parameter - shear modulus
+        Kappa = 0.3*lambda/CharacteristicLength;
+        emit propertyChanged();
+    }
+
+
     SimParams() { Reset(); }
 
-    void Reset() {
+    void Reset()
+    {
         MaxSteps = 20000;
         InitialTimeStep = 0.05;
 
@@ -67,8 +95,7 @@ public:
 
         MinIter = 3;
         MaxIter = 10;
-
-        emit propertyChanged();
+        RecomputeLamdaMuAndKappa();
     }
 
 

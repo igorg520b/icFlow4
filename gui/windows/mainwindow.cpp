@@ -30,6 +30,7 @@ MainWindow::MainWindow(QWidget *parent)
     renderer->AddActor(modelController.model.actor_indenter_intended);
     renderer->AddActor(modelController.model.actor_mesh);
     renderer->AddActor(modelController.model.actor_selected_nodes);
+    renderer->AddActor(modelController.model.actor_collisions);
 
     renderWindow->AddRenderer(renderer);
     renderWindow->GetInteractor()->SetInteractorStyle(specialSelector2D);

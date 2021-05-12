@@ -51,10 +51,13 @@ bool icy::Element::ComputeEquationEntries(EquationOfMotionSolver &eq, SimParams 
 
 bool icy::Element::NeoHookeanElasticity(EquationOfMotionSolver &eq, SimParams &prms, double h)
 {
-    double E = prms.YoungsModulus;
-    double nu = prms.PoissonsRatio;
-    double lambda = (E*nu)/((1.0+nu)*(1.0-2.0*nu)); // Lamé's first parameter
-    double mu = E/(2*(1+nu));                 // Lamé's second parameter - shear modulus
+//    double E = prms.YoungsModulus;
+//    double nu = prms.PoissonsRatio;
+//    double lambda = (E*nu)/((1.0+nu)*(1.0-2.0*nu)); // Lamé's first parameter
+//    double mu = E/(2*(1+nu));                 // Lamé's second parameter - shear modulus
+
+    double lambda = prms.lambda;
+    double mu = prms.mu;
 
     // initial positions of the vertices
     double X1 = nds[0]->x_initial.x();

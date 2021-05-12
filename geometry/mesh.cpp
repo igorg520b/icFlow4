@@ -184,6 +184,7 @@ void icy::Mesh::GenrateIndenter(double CharacteristicLengthMax)
         nd.x_initial << x, y;
         nd.xt = nd.xn = nd.x_initial;
         nd.pinned=true;
+        nd.eqId=-1;
 
         count++;
     }
@@ -204,6 +205,7 @@ void icy::Mesh::DetectContactPairs(double distance_threshold)
 
     indenter_boundary_vs_deformable_nodes.clear();
     deformable_boundary_vs_indenter_nodes.clear();
+    collision_interactions.clear();
 
     for(unsigned b_idx=0; b_idx<boundary_indenter.size(); b_idx++)
         for(unsigned n_idx=0; n_idx<deformable_boundary_nodes.size(); n_idx++)
@@ -213,25 +215,55 @@ void icy::Mesh::DetectContactPairs(double distance_threshold)
             i.ndB_idx = boundary_indenter[b_idx].second;
             i.ndP_idx = deformable_boundary_nodes[n_idx];
 
-            icy::Node &ndA = nodes_indenter[i.ndA_idx];
-            icy::Node &ndB = nodes_indenter[i.ndB_idx];
-            icy::Node &ndP = nodes[i.ndP_idx];
+            i.ndA = &nodes_indenter[i.ndA_idx];
+            i.ndB = &nodes_indenter[i.ndB_idx];
+            i.ndP = &nodes[i.ndP_idx];
 
-            i.dist = SegmentPointDistance(ndA.xt, ndB.xt, ndP.xt, i.t);
-            if(i.dist <= distance_threshold)
+            i.A = i.ndA->xt;
+            i.B = i.ndB->xt;
+            i.P = i.ndP->xt;
+
+            i.dist = SegmentPointDistance(i.A, i.B, i.P, i.D, i.t);
+            if(i.dist <= distance_threshold) {
                 indenter_boundary_vs_deformable_nodes.push_back(i);
+                collision_interactions.push_back(i);
+            }
         }
 
-    qDebug() << "icy::Mesh::DetectContactPairs(): ib_dn " << indenter_boundary_vs_deformable_nodes.size();
+    for(unsigned b_idx=0; b_idx<boundary.size(); b_idx++)
+        for(unsigned n_idx=0; n_idx<nodes_indenter.size(); n_idx++)
+        {
+            Interaction i;
+            i.ndA_idx = boundary[b_idx].first;
+            i.ndB_idx = boundary[b_idx].second;
+            i.ndP_idx = n_idx;
+
+            i.ndA = &nodes[i.ndA_idx];
+            i.ndB = &nodes[i.ndB_idx];
+            i.ndP = &nodes_indenter[i.ndP_idx];
+
+            i.A = i.ndA->xt;
+            i.B = i.ndB->xt;
+            i.P = i.ndP->xt;
+
+            i.dist = SegmentPointDistance(i.A, i.B, i.P, i.D, i.t);
+            if(i.dist <= distance_threshold) {
+                deformable_boundary_vs_indenter_nodes.push_back(i);
+                collision_interactions.push_back(i);
+            }
+        }
+
+//    qDebug() << "icy::Mesh::DetectContactPairs(): ib_dn " << indenter_boundary_vs_deformable_nodes.size();
+//    qDebug() << "icy::Mesh::DetectContactPairs(): db_in " << deformable_boundary_vs_indenter_nodes.size();
 }
 
-double icy::Mesh::SegmentPointDistance(Eigen::Vector2d A, Eigen::Vector2d B, Eigen::Vector2d P, double &t)
+double icy::Mesh::SegmentPointDistance(Eigen::Vector2d A, Eigen::Vector2d B, Eigen::Vector2d P, Eigen::Vector2d &D, double &t)
 {
     Eigen::Vector2d seg = B-A;
     Eigen::Vector2d v = P-A;
     t = v.dot(seg)/seg.squaredNorm();
     t = std::clamp(t, 0.0, 1.0);
-    Eigen::Vector2d D = A+seg*t;
+    D = A+seg*t;
     double dist = (D-P).norm();
     return dist;
 }

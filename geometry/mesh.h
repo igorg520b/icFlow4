@@ -22,8 +22,8 @@
 #include <QDebug>
 
 #include "element.h"
-
-#include <concurrent_unordered_map.h>
+#include "interaction.h"
+//#include <concurrent_unordered_map.h>
 
 namespace icy { class Mesh; class Node; class Element; class Edge;}
 
@@ -42,20 +42,16 @@ public:
     std::vector<std::pair<int,int>> boundary_indenter;
 
     // interaction with the indenter; populated in DetectContactPairs()
-    struct Interaction
-    {
-        unsigned ndA_idx, ndB_idx, ndP_idx;
-        double t, dist;
-    };
     std::vector<Interaction> indenter_boundary_vs_deformable_nodes;
     std::vector<Interaction> deformable_boundary_vs_indenter_nodes;
+    std::vector<Interaction> collision_interactions;
 
     // at the "setting up the scene" stage - remesh 2d floe if needed
     void Reset(double CharacteristicLengthMax);
     void DetectContactPairs(double distance_threshold);
 private:
     void GenrateIndenter(double CharacteristicLengthMax);
-    double static SegmentPointDistance(Eigen::Vector2d A, Eigen::Vector2d B, Eigen::Vector2d P, double &t);
+    double static SegmentPointDistance(Eigen::Vector2d A, Eigen::Vector2d B, Eigen::Vector2d P, Eigen::Vector2d &D, double &t);
 };
 #endif
 #endif // Q_MOC_RUN

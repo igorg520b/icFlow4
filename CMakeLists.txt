@@ -87,6 +87,8 @@ add_executable(fl4
     simulation/parameters_sim.h
     simulation/model.cpp
     simulation/model.h
+    simulation/interaction.h
+    simulation/interaction.cpp
 
     simulation/equationofmotionsolver.cpp
     simulation/equationofmotionsolver.h

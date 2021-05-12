@@ -87,6 +87,18 @@ icy::Model::Model()
     actor_indenter_intended->GetProperty()->SetPointSize(2);
     actor_indenter_intended->GetProperty()->SetLineWidth(1);
 
+    // collisions
+    ugrid_collisions->SetPoints(points_collisions);
+    mapper_collisions->SetInputData(ugrid_collisions);
+    actor_collisions->SetMapper(mapper_collisions);
+    actor_collisions->GetProperty()->EdgeVisibilityOn();
+    actor_collisions->GetProperty()->VertexVisibilityOn();
+    actor_collisions->GetProperty()->SetColor(0.3,0,0.4);
+    actor_collisions->GetProperty()->SetEdgeColor(0.6,0,0.04);
+    actor_collisions->GetProperty()->SetVertexColor(0.04,0,0);
+    actor_collisions->GetProperty()->SetPointSize(2);
+    actor_collisions->GetProperty()->SetLineWidth(1);
+
 }
 
 void icy::Model::Reset(SimParams &prms)
@@ -207,8 +219,51 @@ void icy::Model::UnsafeUpdateGeometry()
     }
     ugrid_indenter_intended->SetCells(VTK_LINE, cellArray_indenter_intended);
 
-
     if(VisualizingVariable != VisOpt::none) UpdateValues();
+
+    // collisions
+    ugrid_collisions->Reset();
+    ugrid_collisions->SetPoints(points_collisions);
+    unsigned nCollisions1 = mesh.indenter_boundary_vs_deformable_nodes.size();
+    unsigned nCollisions2 = mesh.deformable_boundary_vs_indenter_nodes.size();
+    points_collisions->SetNumberOfPoints((nCollisions1+nCollisions2)*2);
+
+    for(unsigned i=0;i<nCollisions1;i++)
+    {
+        Interaction &c = mesh.indenter_boundary_vs_deformable_nodes[i];
+        x[0]=c.P.x();
+        x[1]=c.P.y();
+        x[2]=0;
+        points_collisions->SetPoint(i*2+0, x);
+        x[0]=c.D.x();
+        x[1]=c.D.y();
+        x[2]=0;
+        points_collisions->SetPoint(i*2+1, x);
+
+        pts2[0]=i*2+0;
+        pts2[1]=i*2+1;
+        ugrid_collisions->InsertNextCell(VTK_LINE, 2, pts2);
+    }
+
+    for(unsigned i=0;i<nCollisions2;i++)
+    {
+        Interaction &c = mesh.deformable_boundary_vs_indenter_nodes[i];
+        x[0]=c.P.x();
+        x[1]=c.P.y();
+        x[2]=0;
+        points_collisions->SetPoint(nCollisions1*2+i*2+0, x);
+        x[0]=c.D.x();
+        x[1]=c.D.y();
+        x[2]=0;
+        points_collisions->SetPoint(nCollisions1*2+i*2+1, x);
+
+        pts2[0]=nCollisions1*2+i*2+0;
+        pts2[1]=nCollisions1*2+i*2+1;
+        ugrid_collisions->InsertNextCell(VTK_LINE, 2, pts2);
+    }
+    points_collisions->Modified();
+
+
 }
 
 
@@ -396,6 +451,12 @@ bool icy::Model::AssembleAndSolve(SimParams &prms, double timeStep)
 #pragma omp parallel for
     for(std::size_t i=0;i<nElems;i++) mesh.elems[i].AddToSparsityStructure(eqOfMotion);
 
+    mesh.DetectContactPairs(prms.InteractionDistance);
+
+#pragma omp parallel for
+    for(unsigned i=0;i<mesh.collision_interactions.size();i++)
+        mesh.collision_interactions[i].AddToSparsityStructure(eqOfMotion);
+
     eqOfMotion.CreateStructure();
 
     // assemble
@@ -412,7 +473,10 @@ bool icy::Model::AssembleAndSolve(SimParams &prms, double timeStep)
 #pragma omp parallel for
     for(std::size_t i=0;i<nNodes;i++) mesh.nodes[i].ComputeEquationEntries(eqOfMotion, prms, timeStep);
 
-    mesh.DetectContactPairs(prms.InteractionDistance);
+
+#pragma omp parallel for
+    for(unsigned i=0;i<mesh.collision_interactions.size();i++)
+        mesh.collision_interactions[i].Evaluate(eqOfMotion, prms);
 
     // solve
     bool result = eqOfMotion.Solve();
