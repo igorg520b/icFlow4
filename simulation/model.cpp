@@ -476,7 +476,7 @@ bool icy::Model::AssembleAndSolve(SimParams &prms, double timeStep)
 
 #pragma omp parallel for
     for(unsigned i=0;i<mesh.collision_interactions.size();i++)
-        mesh.collision_interactions[i].Evaluate(eqOfMotion, prms);
+        mesh.collision_interactions[i].Evaluate(eqOfMotion, prms, timeStep);
 
     // solve
     bool result = eqOfMotion.Solve();

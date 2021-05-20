@@ -16,7 +16,7 @@ public:
     Node *ndA, *ndB, *ndP;
 
     void AddToSparsityStructure(EquationOfMotionSolver &eq);
-    void Evaluate(EquationOfMotionSolver &eq, SimParams &prms);
+    void Evaluate(EquationOfMotionSolver &eq, SimParams &prms, double h);
 
 private:
     void static distance(Eigen::Vector2d (&p)[4], double &d, double &t, Eigen::Matrix<double,6,1> &Dd, Eigen::Matrix<double,6,6> &DDd);

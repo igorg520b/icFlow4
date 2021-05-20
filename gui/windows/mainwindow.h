@@ -125,8 +125,6 @@ private:
 
     // splitter and the right side window
     QSplitter *splitter_main;
-    QHBoxLayout *right_side_layout;
-    QWidget *right_side_container;
 
     // properties
     ObjectPropertyBrowser *pbrowser;

@@ -38,18 +38,12 @@ MainWindow::MainWindow(QWidget *parent)
 
     renderWindow->GetInteractor()->SetPicker(pointPicker);
 
-    // right frame
-    right_side_container = new QWidget;
-    right_side_layout = new QHBoxLayout;
-    right_side_container->setLayout(right_side_layout);
-    right_side_layout->setSpacing(0);
-    right_side_layout->setMargin(0);
-    right_side_layout->addWidget(qt_vtk_widget);
-
     // splitter
     splitter_main = new QSplitter(Qt::Orientation::Horizontal);
     splitter_main->addWidget(pbrowser);
-    splitter_main->addWidget(right_side_container);
+    splitter_main->addWidget(qt_vtk_widget);
+    splitter_main->setStretchFactor(0,100);
+    splitter_main->setStretchFactor(1,500);
     setCentralWidget(splitter_main);
 
     // toolbar - comboboxes
@@ -69,7 +63,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->toolBar->addWidget(slider1);
     slider1->setTracking(true);
     slider1->setMinimum(0);
-    slider1->setMaximum(100);
+    slider1->setMaximum(1000);
     connect(slider1, SIGNAL(valueChanged(int)), this, SLOT(sliderValueChanged(int)));
 
     labelStepCount = new QLabel();
@@ -253,7 +247,7 @@ void MainWindow::comboboxIndexChanged_visualizations(int index)
 void MainWindow::sliderValueChanged(int val)
 {
 //    qDebug() << "slider " << val;
-    double offset = 0.5 * 0.01 * val;
+    double offset = 1.5 * 0.001 * val;
     unsigned n = modelController.model.mesh.nodes_indenter.size();
     Eigen::Vector2d y_direction = Eigen::Vector2d(0,-1.0);
     for(unsigned i=0;i<n;i++)

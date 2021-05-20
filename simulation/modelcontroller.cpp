@@ -47,6 +47,7 @@ bool icy::ModelController::Step(void)
             std::cout << " obj " << std::setw(10) << model.eqOfMotion.objective_value;
             std::cout << " sln " << std::setw(10) << model.eqOfMotion.solution_norm;
             if(iter!=1) std::cout << " ra " << std::setw(10) << ratio;
+            else std::cout << "h=" << h;
             std::cout << std::endl;
 
         } while(res && iter < prms.MaxIter && (iter < prms.MinIter || !converges));

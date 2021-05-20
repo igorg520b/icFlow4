@@ -27,7 +27,7 @@ public:
     bool ComputeEquationEntries(EquationOfMotionSolver &eq, SimParams &prms, double timeStep);
 
     double strain_energy_density;   // (not multiplied by volume!)
-    Eigen::Vector<double, 6> DE;    // energy gradient
+    Eigen::Matrix<double, 6, 1> DE;    // energy gradient
     Eigen::Matrix<double, 6, 6> HE; // energy hessian
 
     Eigen::Matrix2d CauchyStress;

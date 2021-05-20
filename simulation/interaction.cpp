@@ -8,10 +8,10 @@ void icy::Interaction::AddToSparsityStructure(EquationOfMotionSolver &eq)
     eq.AddElementToStructure(ndA->eqId, ndP->eqId);
 }
 
-void icy::Interaction::Evaluate(EquationOfMotionSolver &eq, SimParams &prms)
+void icy::Interaction::Evaluate(EquationOfMotionSolver &eq, SimParams &prms, double h)
 {
     double dHat = prms.InteractionDistance;
-    double k = prms.Kappa;
+    double k = prms.Kappa*h*h;
 
     Eigen::Vector2d pts[4];
     pts[0]=A;
@@ -30,7 +30,7 @@ void icy::Interaction::Evaluate(EquationOfMotionSolver &eq, SimParams &prms)
     potential(dHat, dist, Dd, DDd, p, Dp, DDp);
 
     //    double hsq = h*h;
-    k=0.0001;
+//    k=0.0001;
     p*=k;
     Dp*=k;
     DDp*=k;
