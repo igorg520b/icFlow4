@@ -71,20 +71,22 @@ MainWindow::MainWindow(QWidget *parent)
 
     // statusbar
     statusLabel = new QLabel("-");
-
-    statusLabelAttempt = new QLabel(" --- ");
+    statusLabelStepFactor = new QLabel(" --- ");
+    labelAvgSeparationDistance = new QLabel(" --- ");
 
     QSizePolicy sp;
     sp.setHorizontalPolicy(QSizePolicy::Fixed);
-    statusLabelAttempt->setSizePolicy(sp);
-    statusLabelAttempt->setFixedWidth(100);
-
+    statusLabelStepFactor->setSizePolicy(sp);
+    statusLabelStepFactor->setFixedWidth(100);
     labelStepCount->setSizePolicy(sp);
     labelStepCount->setFixedWidth(100);
+    labelAvgSeparationDistance->setSizePolicy(sp);
+    labelAvgSeparationDistance->setFixedWidth(100);
 
     ui->statusbar->addWidget(statusLabel);
-    ui->statusbar->addPermanentWidget(statusLabelAttempt);
+    ui->statusbar->addPermanentWidget(statusLabelStepFactor);
     ui->statusbar->addPermanentWidget(labelStepCount);
+    ui->statusbar->addPermanentWidget(labelAvgSeparationDistance);
 
     // read/restore saved settings
     QSettings settings(m_sSettingsFile);
@@ -225,8 +227,8 @@ void MainWindow::updateGUI()
     ui->action_simulation_single_step->setEnabled(!r);
 
     labelStepCount->setText(QString{"step: %1"}.arg(modelController.currentStep));
-
-    statusLabelAttempt->setText(QString{"%1"}.arg(modelController.timeStepFactor, 6, 'f', 3, '0'));
+    statusLabelStepFactor->setText(QString{"%1"}.arg(modelController.timeStepFactor, 6, 'f', 3, '0'));
+    labelAvgSeparationDistance->setText(QString{"%1"}.arg(modelController.model.avgSeparationDistance, 6, 'f', 3, '0'));
 
     render_results();
 

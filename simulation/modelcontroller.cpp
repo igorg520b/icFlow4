@@ -20,7 +20,7 @@ bool icy::ModelController::Step(void)
 {
 
 
-    int iter = 0, attempt = 0;
+    int iter, attempt = 0;
     bool converges=false;
     bool res; // false if matrix is not PSD
     double h;
@@ -28,6 +28,7 @@ bool icy::ModelController::Step(void)
     {
         h = prms.InitialTimeStep/timeStepFactor; // time step
         model.InitialGuess(prms, h, timeStepFactor);
+        iter = 0;
 
         do
         {
@@ -36,19 +37,17 @@ bool icy::ModelController::Step(void)
 
             double ratio = iter == 0 ? 0 : model.eqOfMotion.solution_norm/model.eqOfMotion.solution_norm_prev;
             converges = (model.eqOfMotion.solution_norm < prms.ConvergenceCutoff || ratio < prms.ConvergenceEpsilon);
-            iter++;
             std::cout << std::scientific << std::setprecision(1);
-            if(iter>3) std::cout << "* ";
-            else if(currentStep%2) std::cout << ". ";
-            else std::cout << "  ";
+            std::cout << (currentStep%2 ? ". " : "  ");
             std::cout << attempt << "-";
             std::cout << std::setw(4) <<std::right<< currentStep;
             std::cout << "-"<< std::left << std::setw(2) << iter;
             std::cout << " obj " << std::setw(10) << model.eqOfMotion.objective_value;
             std::cout << " sln " << std::setw(10) << model.eqOfMotion.solution_norm;
-            if(iter!=1) std::cout << " ra " << std::setw(10) << ratio;
-            else std::cout << "h=" << h;
+            if(iter) std::cout << " ra " << std::setw(10) << ratio;
+            else std::cout << "tsf " << std::setw(20) << timeStepFactor;
             std::cout << std::endl;
+            iter++;
 
         } while(res && iter < prms.MaxIter && (iter < prms.MinIter || !converges));
 
@@ -71,6 +70,7 @@ bool icy::ModelController::Step(void)
     if(timeStepFactor < 1) timeStepFactor=1;
     // accept step
     model.AcceptTentativeValues(h);
+    std::cout << std::endl;
     currentStep++;
 
     emit stepCompleted();

@@ -445,16 +445,17 @@ bool icy::Model::AssembleAndSolve(SimParams &prms, double timeStep)
 {
     eqOfMotion.ClearAndResize(freeNodeCount);
 
-    std::size_t nElems = mesh.elems.size();
-    std::size_t nNodes = mesh.nodes.size();
+    unsigned nElems = mesh.elems.size();
+    unsigned nNodes = mesh.nodes.size();
+    unsigned nInteractions = mesh.collision_interactions.size();
 
 #pragma omp parallel for
-    for(std::size_t i=0;i<nElems;i++) mesh.elems[i].AddToSparsityStructure(eqOfMotion);
+    for(unsigned i=0;i<nElems;i++) mesh.elems[i].AddToSparsityStructure(eqOfMotion);
 
     mesh.DetectContactPairs(prms.InteractionDistance);
 
 #pragma omp parallel for
-    for(unsigned i=0;i<mesh.collision_interactions.size();i++)
+    for(unsigned i=0;i<nInteractions;i++)
         mesh.collision_interactions[i].AddToSparsityStructure(eqOfMotion);
 
     eqOfMotion.CreateStructure();
@@ -462,7 +463,7 @@ bool icy::Model::AssembleAndSolve(SimParams &prms, double timeStep)
     // assemble
     bool mesh_iversion_detected = false;
 #pragma omp parallel for
-    for(std::size_t i=0;i<nElems;i++)
+    for(unsigned i=0;i<nElems;i++)
     {
         bool result = mesh.elems[i].ComputeEquationEntries(eqOfMotion, prms, timeStep);
         if(!result) mesh_iversion_detected = true;
@@ -471,12 +472,24 @@ bool icy::Model::AssembleAndSolve(SimParams &prms, double timeStep)
     if(mesh_iversion_detected) return false; // mesh inversion
 
 #pragma omp parallel for
-    for(std::size_t i=0;i<nNodes;i++) mesh.nodes[i].ComputeEquationEntries(eqOfMotion, prms, timeStep);
-
+    for(unsigned i=0;i<nNodes;i++) mesh.nodes[i].ComputeEquationEntries(eqOfMotion, prms, timeStep);
 
 #pragma omp parallel for
-    for(unsigned i=0;i<mesh.collision_interactions.size();i++)
+    for(unsigned i=0;i<nInteractions;i++)
         mesh.collision_interactions[i].Evaluate(eqOfMotion, prms, timeStep);
+
+    if(nInteractions==0)
+    {
+        avgSeparationDistance=-1;
+    }
+    else
+    {
+        double distTotal = 0;
+#pragma omp parallel for reduction(+:distTotal)
+        for(unsigned i=0;i<nInteractions;i++)
+            distTotal+=mesh.collision_interactions[i].dist;
+        avgSeparationDistance = distTotal/nInteractions;
+    }
 
     // solve
     bool result = eqOfMotion.Solve();

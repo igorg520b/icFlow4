@@ -118,8 +118,9 @@ private:
 
     QString m_sSettingsFile = "ic4_config";
     QLabel *statusLabel;                    // statusbar
-    QLabel *statusLabelAttempt;             // attempt # at advancing a time step
+    QLabel *statusLabelStepFactor;             // attempt # at advancing a time step
     QLabel *labelStepCount;
+    QLabel *labelAvgSeparationDistance;
     QComboBox *comboBox_visualizations;
     QSlider *slider1;
 

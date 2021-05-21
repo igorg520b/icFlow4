@@ -81,6 +81,7 @@ public:
 
     EquationOfMotionSolver eqOfMotion;
     vtkNew<vtkLookupTable> hueLut;
+    double avgSeparationDistance = -1;
 
 private:
 
