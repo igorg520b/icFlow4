@@ -34,9 +34,6 @@
 #include <vtkProperty.h>
 #include <vtkVersion.h>
 #include <vtkWindowToImageFilter.h>
-//#include <vtkPointSource.h>
-//#include <vtkLineSource.h>
-//#include <vtkOBBTree.h>
 #include <vtkPolyDataMapper.h>
 #include <vtkMultiBlockDataSet.h>
 #include <vtkCompositePolyDataMapper2.h>
@@ -113,7 +110,7 @@ private slots:
 
 private:
 //    PreferencesGUI prefsGUI;
-//    icy::ModelController controller;   // simulation algorithms
+    icy::ModelController modelController;
     BackgroundWorker *worker;
 
     QString m_sSettingsFile = "ic4_config";
@@ -131,15 +128,13 @@ private:
     ObjectPropertyBrowser *pbrowser;
 
     // VTK
-    icy::ModelController modelController;
     vtkNew<vtkGenericOpenGLRenderWindow> renderWindow;
 
     QVTKOpenGLNativeWidget *qt_vtk_widget;
 
     vtkNew<vtkRenderer> renderer;
-    vtkNew<vtkNamedColors> colors;
-    vtkNew<vtkPointPicker> pointPicker;
-    vtkNew<vtkInteractorStyleRubberBand2D> interactorStyleRB2D;
+//    vtkNew<vtkPointPicker> pointPicker;
+//    vtkNew<vtkInteractorStyleRubberBand2D> interactorStyleRB2D;
     vtkNew<SpecialSelector2D> specialSelector2D;
 
     vtkNew<vtkScalarBarActor> scalarBar;

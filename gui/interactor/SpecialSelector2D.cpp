@@ -1,23 +1,3 @@
-/*=========================================================================
-
-  Program:   Visualization Toolkit
-  Module:    vtkInteractorStyleRubberBand2D.cxx
-
-  Copyright (c) Ken Martin, Will Schroeder, Bill Lorensen
-  All rights reserved.
-  See Copyright.txt or http://www.kitware.com/Copyright.htm for details.
-
-     This software is distributed WITHOUT ANY WARRANTY; without even
-     the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-     PURPOSE.  See the above copyright notice for more information.
-
-=========================================================================*/
-/*-------------------------------------------------------------------------
-  Copyright 2008 Sandia Corporation.
-  Under the terms of Contract DE-AC04-94AL85000 with Sandia Corporation,
-  the U.S. Government retains certain rights in this software.
--------------------------------------------------------------------------*/
-
 #include "SpecialSelector2D.h"
 #include "mainwindow.h"
 
@@ -38,6 +18,7 @@ vtkStandardNewMacro(SpecialSelector2D);
 
 void SpecialSelector2D::OnLeftButtonDown()
 {
+    /*
     this->FindPokedRenderer(this->StartPosition[0], this->StartPosition[1]);
 
     if(this->Interaction != NONE) return;
@@ -50,10 +31,12 @@ void SpecialSelector2D::OnLeftButtonDown()
     mouse_remained_stationary = true;
 
     //    std::cout << "SpecialSelector2D::OnLeftButtonDown()" << std::endl;
+    */
 }
 
 void SpecialSelector2D::OnLeftButtonUp()
 {
+    /*
     if(this->Interaction != SELECTING) return;
     this->Interaction = NONE;
     // if "mouse_remained_statinary", then toggle point selection
@@ -82,6 +65,7 @@ void SpecialSelector2D::OnLeftButtonUp()
         mw->modelController.model.UnsafeUpdateGeometry();
         this->GetInteractor()->Render();
     }
+    */
 }
 
 void SpecialSelector2D::OnMouseMove()
@@ -91,6 +75,7 @@ void SpecialSelector2D::OnMouseMove()
 
     if(this->Interaction == SELECTING)
     {
+        /*
         vtkRenderWindowInteractor* rwi = this->GetInteractor();
         int lastPt[] = { 0, 0 };
         rwi->GetLastEventPosition(lastPt);
@@ -132,6 +117,7 @@ void SpecialSelector2D::OnMouseMove()
         mw->modelController.model.UnsafeUpdateGeometry();
 
         rwi->Render();
+        */
     }
     else
     {
@@ -142,6 +128,7 @@ void SpecialSelector2D::OnMouseMove()
 
 void SpecialSelector2D::OnRightButtonDown()
 {
+    /*
     //vtkPointPicker
     vtkPointPicker *pp = dynamic_cast<vtkPointPicker*>(this->Interactor->GetPicker());
 
@@ -158,6 +145,7 @@ void SpecialSelector2D::OnRightButtonDown()
         mw->modelController.model.mesh.nodes[id].selected = false;
     mw->modelController.model.UnsafeUpdateGeometry();
     this->GetInteractor()->Render();
+    */
 }
 
 void SpecialSelector2D::OnRightButtonUp() { }

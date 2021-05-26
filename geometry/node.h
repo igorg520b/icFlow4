@@ -2,14 +2,6 @@
 #ifndef NODE_H
 #define NODE_H
 
-#include <concurrent_vector.h>
-//#include <concurrent_unordered_map.h>
-
-//#include <vector>
-//#include <algorithm>
-//#include <map>
-//#include <unordered_map>
-//#include <cmath>
 #include <Eigen/Core>
 
 #include "equationofmotionsolver.h"
@@ -23,12 +15,9 @@ public:
     Node();
     void Reset();
 
-    int id, eqId;       // sequential number of a node; identificator in the equation of motion (if not pinned)
-    bool pinned = false;
-    bool selected = false;
+    int locId, globId, eqId;       // sequential number of a node; identificator in the equation of motion (if not pinned)
+    bool pinned;
     double area;        // area that the node "represents", for applying various forces
-
-//    tbb::concurrent_vector<icy::Element*> adjacent_elems;
 
     Eigen::Vector2d x_initial;  // initial configuration
     Eigen::Vector2d xn, vn;     // position and velocity at step n

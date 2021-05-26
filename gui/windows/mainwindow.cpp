@@ -23,20 +23,17 @@ MainWindow::MainWindow(QWidget *parent)
     qt_vtk_widget = new QVTKOpenGLNativeWidget();
     qt_vtk_widget->setRenderWindow(renderWindow);
 
-
-    renderer->SetBackground(colors->GetColor3d("White").GetData());
-    renderer->AddActor(modelController.model.actor_boundary);
-    renderer->AddActor(modelController.model.actor_indenter);
-    renderer->AddActor(modelController.model.actor_indenter_intended);
-    renderer->AddActor(modelController.model.actor_mesh);
-    renderer->AddActor(modelController.model.actor_selected_nodes);
-    renderer->AddActor(modelController.model.actor_collisions);
+    renderer->SetBackground(1.0,1.0,1.0);
+//    renderer->AddActor(modelController.model.mesh.actor_collisions);
+    renderer->AddActor(modelController.model.mesh.actor_mesh_deformable);
+    renderer->AddActor(modelController.model.mesh.actor_boundary_all);
+    renderer->AddActor(modelController.model.mesh.actor_boundary_intended_indenter);
 
     renderWindow->AddRenderer(renderer);
     renderWindow->GetInteractor()->SetInteractorStyle(specialSelector2D);
     specialSelector2D->mw = this;
 
-    renderWindow->GetInteractor()->SetPicker(pointPicker);
+//    renderWindow->GetInteractor()->SetPicker(pointPicker);
 
     // splitter
     splitter_main = new QSplitter(Qt::Orientation::Horizontal);
@@ -51,7 +48,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->toolBar->addWidget(comboBox_visualizations);
 
     // populate combobox
-    QMetaEnum qme = QMetaEnum::fromType<icy::Model::VisOpt>();
+    QMetaEnum qme = QMetaEnum::fromType<icy::Mesh::VisOpt>();
     for(int i=0;i<qme.keyCount();i++) comboBox_visualizations->addItem(qme.key(i));
 
     connect(comboBox_visualizations, QOverload<int>::of(&QComboBox::currentIndexChanged),
@@ -107,7 +104,7 @@ MainWindow::MainWindow(QWidget *parent)
     camera->Modified();
 
     renderer->AddActor(scalarBar);
-    scalarBar->SetLookupTable(modelController.model.hueLut);
+    scalarBar->SetLookupTable(modelController.model.mesh.hueLut);
 
     scalarBar->SetMaximumWidthInPixels(130);
     scalarBar->SetBarRatio(0.07);
@@ -119,7 +116,6 @@ MainWindow::MainWindow(QWidget *parent)
     scalarBar->GetLabelTextProperty()->ItalicOff();
     scalarBar->GetLabelTextProperty()->ShadowOff();
     scalarBar->GetLabelTextProperty()->SetColor(0.1,0.1,0.1);
-//    scalarBar->GetLabelTextProperty()->SetFontFamilyToTimes();
 
     renderWindow->Render();
 
@@ -231,7 +227,6 @@ void MainWindow::updateGUI()
     labelAvgSeparationDistance->setText(QString{"%1"}.arg(modelController.model.avgSeparationDistance, 6, 'f', 3, '0'));
 
     render_results();
-
 }
 
 
@@ -239,7 +234,7 @@ void MainWindow::updateGUI()
 void MainWindow::comboboxIndexChanged_visualizations(int index)
 {
     qDebug() << "comboboxIndexChanged_visualizations " << index;
-    modelController.model.ChangeVisualizationOption((icy::Model::VisOpt)index);
+    modelController.model.mesh.ChangeVisualizationOption((icy::Mesh::VisOpt)index);
     scalarBar->SetVisibility(index != 0);
     renderWindow->Render();
 }
@@ -250,15 +245,15 @@ void MainWindow::sliderValueChanged(int val)
 {
 //    qDebug() << "slider " << val;
     double offset = 1.5 * 0.001 * val;
-    unsigned n = modelController.model.mesh.nodes_indenter.size();
+    icy::MeshFragment &indenter = modelController.model.mesh.indenter;
+    unsigned n = indenter.nodes.size();
     Eigen::Vector2d y_direction = Eigen::Vector2d(0,-1.0);
     for(unsigned i=0;i<n;i++)
     {
-        icy::Node &nd = modelController.model.mesh.nodes_indenter[i];
+        icy::Node &nd = indenter.nodes[i];
         nd.intended_position = nd.x_initial + offset*y_direction;
     }
-    updateGUI();
-
+    render_results();
 }
 
 

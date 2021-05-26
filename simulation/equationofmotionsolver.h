@@ -1,7 +1,7 @@
 #if !defined(Q_MOC_RUN) // MOC has a glitch when parsing concurrent_set.h
 #ifndef EQUATIONOFMOTIONSOLVER_H
 #define EQUATIONOFMOTIONSOLVER_H
-#include <concurrent_vector.h>
+#include <tbb/concurrent_vector.h>
 #include <Eigen/Core>
 #include <map>
 #include <unordered_map>

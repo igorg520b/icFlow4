@@ -9,11 +9,9 @@ icy::Node::Node()
 void icy::Node::Reset()
 {
     x_initial = xn = vn = xt = Eigen::Vector2d::Zero();
-    id = -1;
+    eqId = locId = globId = -1;
     area = 0;
-
-    //    adjacent_elems.reserve(7);
-    //    adjacent_elems.clear();
+    pinned = false;
 }
 
 void icy::Node::ComputeEquationEntries(EquationOfMotionSolver &eq, SimParams &prms, double timeStep)
