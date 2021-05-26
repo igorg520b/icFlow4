@@ -1,33 +1,51 @@
 #include <vtkPointData.h>
 #include <QtGlobal>
 #include "model.h"
-
+#include "mesh.h"
 
 icy::Model::Model()
 {
+    mesh = new icy::Mesh();
+}
 
-
+icy::Model::~Model()
+{
+    delete mesh;
 }
 
 
 void icy::Model::UnsafeUpdateGeometry()
 {
     vtk_update_mutex.lock();
-    mesh.UnsafeUpdateGeometry();
+    mesh->UnsafeUpdateGeometry();
     vtk_update_mutex.unlock();
 }
 
-void icy::Model::ChangeVisualizationOption(icy::Mesh::VisOpt option)
+void icy::Model::ChangeVisualizationOption(icy::Model::VisOpt option)
 {
     vtk_update_mutex.lock();
-    mesh.ChangeVisualizationOption(option);
+    mesh->ChangeVisualizationOption((int)option);
     vtk_update_mutex.unlock();
+}
+
+
+void icy::Model::PositionIndenter(double offset)
+{
+//    vtk_update_mutex.lock();
+    unsigned n = mesh->indenter.nodes.size();
+    Eigen::Vector2d y_direction = Eigen::Vector2d(0,-1.0);
+    for(unsigned i=0;i<n;i++)
+    {
+        icy::Node &nd = mesh->indenter.nodes[i];
+        nd.intended_position = nd.x_initial + offset*y_direction;
+    }
+//    vtk_update_mutex.unlock();
 }
 
 
 void icy::Model::Reset(SimParams &prms)
 {
-    mesh.Reset(prms.CharacteristicLength);
+    mesh->Reset(prms.CharacteristicLength);
     UnsafeUpdateGeometry();
 }
 
@@ -41,11 +59,11 @@ void icy::Model::Reset(SimParams &prms)
 
 void icy::Model::InitialGuess(SimParams &prms, double timeStep, double timeStepFactor)
 {
-    std::size_t nNodes = mesh.allNodes.size();
+    std::size_t nNodes = mesh->allNodes.size();
 #pragma omp parallel for
     for(std::size_t i=0;i<nNodes;i++)
     {
-        icy::Node *nd = mesh.allNodes[i];
+        icy::Node *nd = mesh->allNodes[i];
         if(nd->pinned)
         {
             nd->xt = (1/timeStepFactor)*nd->intended_position + (1-1/timeStepFactor)*nd->xn;
@@ -64,21 +82,23 @@ void icy::Model::InitialGuess(SimParams &prms, double timeStep, double timeStepF
 
 bool icy::Model::AssembleAndSolve(SimParams &prms, double timeStep)
 {
-    eqOfMotion.ClearAndResize(mesh.freeNodeCount);
+    eqOfMotion.ClearAndResize(mesh->freeNodeCount);
 
-    unsigned nElems = mesh.allElems.size();
-    unsigned nNodes = mesh.allNodes.size();
-    unsigned nInteractions = mesh.collision_interactions.size();
+    unsigned nElems = mesh->allElems.size();
+    unsigned nNodes = mesh->allNodes.size();
 
 #pragma omp parallel for
-    for(unsigned i=0;i<nElems;i++) mesh.allElems[i]->AddToSparsityStructure(eqOfMotion);
+    for(unsigned i=0;i<nElems;i++) mesh->allElems[i]->AddToSparsityStructure(eqOfMotion);
+
+    vtk_update_mutex.lock();
+    mesh->DetectContactPairs(prms.InteractionDistance);
+    vtk_update_mutex.unlock();
+    unsigned nInteractions = mesh->collision_interactions.size();
 
 /*
-    mesh.DetectContactPairs(prms.InteractionDistance);
-
 #pragma omp parallel for
     for(unsigned i=0;i<nInteractions;i++)
-        mesh.collision_interactions[i].AddToSparsityStructure(eqOfMotion);
+        mesh->collision_interactions[i].AddToSparsityStructure(eqOfMotion);
 */
     eqOfMotion.CreateStructure();
 
@@ -87,18 +107,18 @@ bool icy::Model::AssembleAndSolve(SimParams &prms, double timeStep)
 #pragma omp parallel for
     for(unsigned i=0;i<nElems;i++)
     {
-        bool result = mesh.allElems[i]->ComputeEquationEntries(eqOfMotion, prms, timeStep);
+        bool result = mesh->allElems[i]->ComputeEquationEntries(eqOfMotion, prms, timeStep);
         if(!result) mesh_iversion_detected = true;
     }
 
     if(mesh_iversion_detected) return false; // mesh inversion
 
 #pragma omp parallel for
-    for(unsigned i=0;i<nNodes;i++) mesh.allNodes[i]->ComputeEquationEntries(eqOfMotion, prms, timeStep);
+    for(unsigned i=0;i<nNodes;i++) mesh->allNodes[i]->ComputeEquationEntries(eqOfMotion, prms, timeStep);
 /*
 #pragma omp parallel for
     for(unsigned i=0;i<nInteractions;i++)
-        mesh.collision_interactions[i].Evaluate(eqOfMotion, prms, timeStep);
+        mesh->collision_interactions[i].Evaluate(eqOfMotion, prms, timeStep);
 
     if(nInteractions==0)
     {
@@ -109,7 +129,7 @@ bool icy::Model::AssembleAndSolve(SimParams &prms, double timeStep)
         double distTotal = 0;
 #pragma omp parallel for reduction(+:distTotal)
         for(unsigned i=0;i<nInteractions;i++)
-            distTotal+=mesh.collision_interactions[i].dist;
+            distTotal+=mesh->collision_interactions[i].dist;
         avgSeparationDistance = distTotal/nInteractions;
     }
 */
@@ -120,7 +140,7 @@ bool icy::Model::AssembleAndSolve(SimParams &prms, double timeStep)
 #pragma omp parallel for
     for(std::size_t i=0;i<nNodes;i++)
     {
-        icy::Node *nd = mesh.allNodes[i];
+        icy::Node *nd = mesh->allNodes[i];
         Eigen::Vector2d delta_x;
         if(!nd->pinned)
         {
@@ -134,11 +154,11 @@ bool icy::Model::AssembleAndSolve(SimParams &prms, double timeStep)
 void icy::Model::AcceptTentativeValues(double timeStep)
 {
     vtk_update_mutex.lock();
-    unsigned nNodes = mesh.allNodes.size();
+    unsigned nNodes = mesh->allNodes.size();
 #pragma omp parallel for
     for(unsigned i=0;i<nNodes;i++)
     {
-        icy::Node *nd = mesh.allNodes[i];
+        icy::Node *nd = mesh->allNodes[i];
         Eigen::Vector2d dx = nd->xt-nd->xn;
         nd->vn = dx/timeStep;
         nd->xn = nd->xt;

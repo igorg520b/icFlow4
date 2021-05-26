@@ -11,28 +11,35 @@
 #include <unordered_set>
 
 #include "parameters_sim.h"
-#include "mesh.h"
 #include "equationofmotionsolver.h"
 
 #include <Eigen/Core>
 
-namespace icy { class Model; class Node; class Element;}
+namespace icy { class Model; class Mesh; class Node; class Element; }
 
 class icy::Model : public QObject
 {
     Q_OBJECT
 
-public:    
+public:
+
+    // visualization options
+    enum VisOpt { none, elem_area, energy_density, stress_xx, stress_yy, stress_hydrostatic, non_symm_measure,
+                ps1, ps2, shear_stress, volume_change};
+    Q_ENUM(VisOpt)
+
     Model();
+    ~Model();
     void Reset(SimParams &prms);
 
     void InitialGuess(SimParams &prms, double timeStep, double timeStepFactor);
     bool AssembleAndSolve(SimParams &prms, double timeStep);    // return what solver returns
     void AcceptTentativeValues(double timeStep);
     void UnsafeUpdateGeometry();
-    void ChangeVisualizationOption(icy::Mesh::VisOpt option);
+    void ChangeVisualizationOption(icy::Model::VisOpt option);
+    void PositionIndenter(double offset);
 
-    icy::Mesh mesh;
+    icy::Mesh *mesh;
 
     EquationOfMotionSolver eqOfMotion;
     double avgSeparationDistance = -1;

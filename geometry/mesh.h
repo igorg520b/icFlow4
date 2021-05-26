@@ -1,9 +1,12 @@
+#if !defined(Q_MOC_RUN) // MOC has a glitch when parsing tbb headers
 #ifndef FL333_H
 #define FL333_H
+
 
 #include <gmsh.h>
 
 #include <vector>
+#include <tbb/concurrent_vector.h>
 
 #include "meshfragment.h"
 #include "element.h"
@@ -30,17 +33,10 @@
 
 namespace icy { class Mesh; class Model; }
 
-class icy::Mesh : public QObject
+class icy::Mesh
 {
-    Q_OBJECT
-
 public:
     Mesh();
-
-    // visualization options
-    enum VisOpt { none, elem_area, energy_density, stress_xx, stress_yy, stress_hydrostatic, non_symm_measure,
-                ps1, ps2, shear_stress, volume_change};
-    Q_ENUM(VisOpt)
 
     MeshFragment brick, indenter;
     std::vector<MeshFragment*> allMeshes;   // including the indenter
@@ -49,11 +45,10 @@ public:
     std::vector<std::pair<Node*,Node*>> allBoundaryEdges; // for visualization
     unsigned freeNodeCount;
 
-    std::vector<Interaction> collision_interactions;
+    tbb::concurrent_vector<Interaction> collision_interactions;
 
     vtkNew<vtkLookupTable> hueLut;
     vtkNew<vtkActor> actor_collisions;
-
     vtkNew<vtkActor> actor_mesh_deformable;
     vtkNew<vtkActor> actor_boundary_all;
     vtkNew<vtkActor> actor_boundary_intended_indenter;
@@ -64,14 +59,20 @@ public:
     void Reset(double CharacteristicLengthMax);
     void DetectContactPairs(double distance_threshold);
 
-    void ChangeVisualizationOption(VisOpt option);  // called from the main thread
+    void ChangeVisualizationOption(int option);  // called from the main thread
 
 private:
     void UpdateValues();
     void UnsafeUpdateGeometry();
     void RegenerateVisualizedGeometry();    // from the collection of individual meshes, build allNodes, allElems, etc.
-    double static SegmentPointDistance(Eigen::Vector2d A, Eigen::Vector2d B, Eigen::Vector2d P, Eigen::Vector2d &D, double &t);
-    VisOpt VisualizingVariable = VisOpt::none;
+
+    void AddToNarrowListIfNeeded(Node *A, Node *B, Node *P, double distance_threshold);
+    std::vector<std::pair<unsigned,unsigned>> broadphase_list; // indices of potentially colliding edges
+
+
+
+
+    int VisualizingVariable = 0;
 
     vtkNew<vtkPoints> points_deformable;
     vtkNew<vtkPoints> points_indenter_intended;   // prescribed indenter location
@@ -96,6 +97,7 @@ private:
     vtkNew<vtkPoints> points_collisions;
     vtkNew<vtkUnstructuredGrid> ugrid_collisions;
     vtkNew<vtkDataSetMapper> mapper_collisions;
+    vtkNew<vtkCellArray> cellArray_collisions;
 
     void InitializeLUT(int table=1);
 
@@ -190,4 +192,5 @@ private:
 
     friend class icy::Model;
 };
+#endif
 #endif

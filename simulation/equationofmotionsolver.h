@@ -1,4 +1,4 @@
-#if !defined(Q_MOC_RUN) // MOC has a glitch when parsing concurrent_set.h
+#if !defined(Q_MOC_RUN) // MOC has a glitch when parsing tbb headers
 #ifndef EQUATIONOFMOTIONSOLVER_H
 #define EQUATIONOFMOTIONSOLVER_H
 #include <tbb/concurrent_vector.h>

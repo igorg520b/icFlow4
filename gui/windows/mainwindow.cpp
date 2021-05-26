@@ -1,6 +1,7 @@
 #include <algorithm>
 #include "mainwindow.h"
 #include "./ui_mainwindow.h"
+#include "mesh.h"
 
 MainWindow::~MainWindow() {delete ui;}
 
@@ -24,10 +25,10 @@ MainWindow::MainWindow(QWidget *parent)
     qt_vtk_widget->setRenderWindow(renderWindow);
 
     renderer->SetBackground(1.0,1.0,1.0);
-    renderer->AddActor(modelController.model.mesh.actor_collisions);
-    renderer->AddActor(modelController.model.mesh.actor_mesh_deformable);
-    renderer->AddActor(modelController.model.mesh.actor_boundary_all);
-    renderer->AddActor(modelController.model.mesh.actor_boundary_intended_indenter);
+    renderer->AddActor(modelController.model.mesh->actor_collisions);
+    renderer->AddActor(modelController.model.mesh->actor_mesh_deformable);
+    renderer->AddActor(modelController.model.mesh->actor_boundary_all);
+    renderer->AddActor(modelController.model.mesh->actor_boundary_intended_indenter);
 
     renderWindow->AddRenderer(renderer);
     renderWindow->GetInteractor()->SetInteractorStyle(specialSelector2D);
@@ -48,7 +49,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->toolBar->addWidget(comboBox_visualizations);
 
     // populate combobox
-    QMetaEnum qme = QMetaEnum::fromType<icy::Mesh::VisOpt>();
+    QMetaEnum qme = QMetaEnum::fromType<icy::Model::VisOpt>();
     for(int i=0;i<qme.keyCount();i++) comboBox_visualizations->addItem(qme.key(i));
 
     connect(comboBox_visualizations, QOverload<int>::of(&QComboBox::currentIndexChanged),
@@ -104,7 +105,7 @@ MainWindow::MainWindow(QWidget *parent)
     camera->Modified();
 
     renderer->AddActor(scalarBar);
-    scalarBar->SetLookupTable(modelController.model.mesh.hueLut);
+    scalarBar->SetLookupTable(modelController.model.mesh->hueLut);
 
     scalarBar->SetMaximumWidthInPixels(130);
     scalarBar->SetBarRatio(0.07);
@@ -232,7 +233,7 @@ void MainWindow::updateGUI()
 void MainWindow::comboboxIndexChanged_visualizations(int index)
 {
     qDebug() << "comboboxIndexChanged_visualizations " << index;
-    modelController.model.mesh.ChangeVisualizationOption((icy::Mesh::VisOpt)index);
+    modelController.model.ChangeVisualizationOption((icy::Model::VisOpt)index);
     scalarBar->SetVisibility(index != 0);
     renderWindow->Render();
 }
@@ -241,16 +242,7 @@ void MainWindow::comboboxIndexChanged_visualizations(int index)
 
 void MainWindow::sliderValueChanged(int val)
 {
-//    qDebug() << "slider " << val;
-    double offset = 1.1 * 0.001 * val;
-    icy::MeshFragment &indenter = modelController.model.mesh.indenter;
-    unsigned n = indenter.nodes.size();
-    Eigen::Vector2d y_direction = Eigen::Vector2d(0,-1.0);
-    for(unsigned i=0;i<n;i++)
-    {
-        icy::Node &nd = indenter.nodes[i];
-        nd.intended_position = nd.x_initial + offset*y_direction;
-    }
+    modelController.model.PositionIndenter(1.1 * 0.001 * val);
     render_results();
 }
 

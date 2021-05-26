@@ -1,6 +1,17 @@
 #include "interaction.h"
 #include "node.h"
 
+double icy::Interaction::SegmentPointDistance(Eigen::Vector2d A, Eigen::Vector2d B, Eigen::Vector2d P, Eigen::Vector2d &D)
+{
+    Eigen::Vector2d seg = B-A;
+    Eigen::Vector2d v = P-A;
+    double t = v.dot(seg)/seg.squaredNorm();
+    t = std::clamp(t, 0.0, 1.0);
+    D = A+seg*t;
+    double dist = (D-P).norm();
+    return dist;
+}
+
 void icy::Interaction::AddToSparsityStructure(EquationOfMotionSolver &eq)
 {
     eq.AddElementToStructure(ndA->eqId, ndB->eqId);
@@ -14,9 +25,9 @@ void icy::Interaction::Evaluate(EquationOfMotionSolver &eq, SimParams &prms, dou
     double k = prms.Kappa*h*h;
 
     Eigen::Vector2d pts[4];
-    pts[0]=A;
-    pts[1]=B;
-    pts[2]=P;
+    pts[0]=ndA->xt;
+    pts[1]=ndB->xt;
+    pts[2]=ndP->xt;
 
     double dist, proj_t;
     Eigen::Matrix<double,6,1> Dd;
@@ -29,8 +40,6 @@ void icy::Interaction::Evaluate(EquationOfMotionSolver &eq, SimParams &prms, dou
     Eigen::Matrix<double,6,6> DDp;
     potential(dHat, dist, Dd, DDd, p, Dp, DDp);
 
-    //    double hsq = h*h;
-//    k=0.0001;
     p*=k;
     Dp*=k;
     DDp*=k;

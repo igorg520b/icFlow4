@@ -54,7 +54,6 @@ icy::Mesh::Mesh()
     actor_boundary_intended_indenter->GetProperty()->SetPointSize(2);
     actor_boundary_intended_indenter->GetProperty()->SetLineWidth(1);
 
-    /*
     // collisions
     ugrid_collisions->SetPoints(points_collisions);
     mapper_collisions->SetInputData(ugrid_collisions);
@@ -66,7 +65,9 @@ icy::Mesh::Mesh()
     actor_collisions->GetProperty()->SetVertexColor(0.04,0,0);
     actor_collisions->GetProperty()->SetPointSize(2);
     actor_collisions->GetProperty()->SetLineWidth(1);
-    */
+
+    collision_interactions.reserve(10000);
+    broadphase_list.reserve(100000);
 }
 
 
@@ -141,24 +142,15 @@ void icy::Mesh::RegenerateVisualizedGeometry()
 
 
 
-double icy::Mesh::SegmentPointDistance(Eigen::Vector2d A, Eigen::Vector2d B, Eigen::Vector2d P, Eigen::Vector2d &D, double &t)
-{
-    Eigen::Vector2d seg = B-A;
-    Eigen::Vector2d v = P-A;
-    t = v.dot(seg)/seg.squaredNorm();
-    t = std::clamp(t, 0.0, 1.0);
-    D = A+seg*t;
-    double dist = (D-P).norm();
-    return dist;
-}
 
-void icy::Mesh::ChangeVisualizationOption(VisOpt option)
+
+void icy::Mesh::ChangeVisualizationOption(int option)
 {
     qDebug() << "icy::Model::ChangeVisualizationOption " << option;
     if(VisualizingVariable == option) return; // option did not change
     VisualizingVariable = option;
 
-    if(VisualizingVariable == VisOpt::none)
+    if(VisualizingVariable == (int)icy::Model::VisOpt::none)
     {
         dataSetMapper_deformable->ScalarVisibilityOff();
         ugrid_deformable->GetPointData()->RemoveArray("visualized_values");
@@ -191,7 +183,24 @@ void icy::Mesh::UnsafeUpdateGeometry()
         points_indenter_intended->SetPoint((vtkIdType)nd.locId, nd.intended_position.data());
     points_indenter_intended->Modified();
 
-    if(VisualizingVariable != VisOpt::none) UpdateValues();
+    if(VisualizingVariable != icy::Model::VisOpt::none) UpdateValues();
+
+
+    // collisions
+    points_collisions->SetNumberOfPoints(collision_interactions.size()*2);
+    cellArray_collisions->Reset();
+    for(unsigned i=0;i<collision_interactions.size();i++)
+    {
+        vtkIdType pts[2] = {2*i, 2*i+1};
+        cellArray_collisions->InsertNextCell(2, pts);
+        Interaction &intr = collision_interactions[i];
+        points_collisions->SetPoint((vtkIdType)2*i, intr.ndP->xt.data());
+        points_collisions->SetPoint((vtkIdType)2*i+1, intr.D.data());
+    }
+    points_indenter_intended->Modified();
+    ugrid_collisions->SetCells(VTK_LINE, cellArray_collisions);
+    actor_collisions->Modified();
+
 
 
 /*
@@ -211,109 +220,50 @@ void icy::Mesh::UnsafeUpdateGeometry()
     poly_data->GetPointData()->SetActiveScalars("glyph_int_data");
 */
 
-    /*
-    // collisions
-    ugrid_collisions->Reset();
-    ugrid_collisions->SetPoints(points_collisions);
-    unsigned nCollisions1 = mesh.indenter_boundary_vs_deformable_nodes.size();
-    unsigned nCollisions2 = mesh.deformable_boundary_vs_indenter_nodes.size();
-    points_collisions->SetNumberOfPoints((nCollisions1+nCollisions2)*2);
+}
 
-    for(unsigned i=0;i<nCollisions1;i++)
+void icy::Mesh::AddToNarrowListIfNeeded(Node *ndA, Node *ndB, Node *ndP, double distance_threshold)
+{
+    Eigen::Vector2d D;
+    double dist = icy::Interaction::SegmentPointDistance(ndA->xt, ndB->xt, ndP->xt, D);
+    if(dist < distance_threshold)
     {
-        Interaction &c = mesh.indenter_boundary_vs_deformable_nodes[i];
-        x[0]=c.P.x();
-        x[1]=c.P.y();
-        x[2]=0;
-        points_collisions->SetPoint(i*2+0, x);
-        x[0]=c.D.x();
-        x[1]=c.D.y();
-        x[2]=0;
-        points_collisions->SetPoint(i*2+1, x);
-
-        pts2[0]=i*2+0;
-        pts2[1]=i*2+1;
-        ugrid_collisions->InsertNextCell(VTK_LINE, 2, pts2);
+        Interaction i;
+        i.ndA = ndA;
+        i.ndB = ndB;
+        i.ndP = ndP;
+        i.D = D;
+        collision_interactions.push_back(i);
     }
-
-    for(unsigned i=0;i<nCollisions2;i++)
-    {
-        Interaction &c = mesh.deformable_boundary_vs_indenter_nodes[i];
-        x[0]=c.P.x();
-        x[1]=c.P.y();
-        x[2]=0;
-        points_collisions->SetPoint(nCollisions1*2+i*2+0, x);
-        x[0]=c.D.x();
-        x[1]=c.D.y();
-        x[2]=0;
-        points_collisions->SetPoint(nCollisions1*2+i*2+1, x);
-
-        pts2[0]=nCollisions1*2+i*2+0;
-        pts2[1]=nCollisions1*2+i*2+1;
-        ugrid_collisions->InsertNextCell(VTK_LINE, 2, pts2);
-    }
-    points_collisions->Modified();
-*/
-
 }
 
 
 void icy::Mesh::DetectContactPairs(double distance_threshold)
 {
-/*
-    indenter_boundary_vs_deformable_nodes.clear();
-    deformable_boundary_vs_indenter_nodes.clear();
+    unsigned nEdges = allBoundaryEdges.size();
+
+    for(unsigned idx1=0;idx1<nEdges;idx1++)
+        for(unsigned idx2=0;idx2<idx1;idx2++)
+            broadphase_list.push_back(std::make_pair(idx1,idx2));
+
+    unsigned nBroadList = broadphase_list.size();
+
     collision_interactions.clear();
+#pragma omp parallel for
+    for(unsigned i=0;i<nBroadList;i++)
+    {
+        auto [idx1,idx2] = broadphase_list[i];
+        auto [nd1, nd2] = allBoundaryEdges[idx1];
+        auto [nd3, nd4] = allBoundaryEdges[idx2];
 
-    for(unsigned b_idx=0; b_idx<indenter.boundary_edges.size(); b_idx++)
-        for(unsigned n_idx=0; n_idx<brick.boundary_nodes.size(); n_idx++)
-        {
-            Interaction i;
-            i.ndA_idx = boundary_indenter[b_idx].first;
-            i.ndB_idx = boundary_indenter[b_idx].second;
-            i.ndP_idx = deformable_boundary_nodes[n_idx];
+        AddToNarrowListIfNeeded(nd1, nd2, nd3, distance_threshold);
+        AddToNarrowListIfNeeded(nd1, nd2, nd4, distance_threshold);
+        AddToNarrowListIfNeeded(nd3, nd4, nd1, distance_threshold);
+        AddToNarrowListIfNeeded(nd3, nd4, nd2, distance_threshold);
+    }
 
-            i.ndA = &nodes_indenter[i.ndA_idx];
-            i.ndB = &nodes_indenter[i.ndB_idx];
-            i.ndP = &nodes[i.ndP_idx];
 
-            i.A = i.ndA->xt;
-            i.B = i.ndB->xt;
-            i.P = i.ndP->xt;
 
-            i.dist = SegmentPointDistance(i.A, i.B, i.P, i.D, i.t);
-            if(i.dist <= distance_threshold) {
-                indenter_boundary_vs_deformable_nodes.push_back(i);
-                collision_interactions.push_back(i);
-            }
-        }
-
-    for(unsigned b_idx=0; b_idx<boundary.size(); b_idx++)
-        for(unsigned n_idx=0; n_idx<nodes_indenter.size(); n_idx++)
-        {
-            Interaction i;
-            i.ndA_idx = boundary[b_idx].first;
-            i.ndB_idx = boundary[b_idx].second;
-            i.ndP_idx = n_idx;
-
-            i.ndA = &nodes[i.ndA_idx];
-            i.ndB = &nodes[i.ndB_idx];
-            i.ndP = &nodes_indenter[i.ndP_idx];
-
-            i.A = i.ndA->xt;
-            i.B = i.ndB->xt;
-            i.P = i.ndP->xt;
-
-            i.dist = SegmentPointDistance(i.A, i.B, i.P, i.D, i.t);
-            if(i.dist <= distance_threshold) {
-                deformable_boundary_vs_indenter_nodes.push_back(i);
-                collision_interactions.push_back(i);
-            }
-        }
-
-//    qDebug() << "icy::Mesh::DetectContactPairs(): ib_dn " << indenter_boundary_vs_deformable_nodes.size();
-//    qDebug() << "icy::Mesh::DetectContactPairs(): db_in " << deformable_boundary_vs_indenter_nodes.size();
-*/
 }
 
 void icy::Mesh::UpdateValues()
@@ -326,34 +276,34 @@ void icy::Mesh::UpdateValues()
         return;
     }
 
-    switch(VisualizingVariable)
+    switch((icy::Model::VisOpt)VisualizingVariable)
     {
-        case elem_area:
+        case icy::Model::VisOpt::elem_area:
         visualized_values->SetNumberOfValues(allElems.size());
         for(size_t i=0;i<allElems.size();i++) visualized_values->SetValue(i, allElems[i]->area_initial);
         break;
 
-    case energy_density:
+    case icy::Model::VisOpt::energy_density:
         visualized_values->SetNumberOfValues(allElems.size());
         for(size_t i=0;i<allElems.size();i++) visualized_values->SetValue(i, allElems[i]->strain_energy_density);
         break;
 
-    case stress_xx:
+    case icy::Model::VisOpt::stress_xx:
         visualized_values->SetNumberOfValues(allElems.size());
         for(size_t i=0;i<allElems.size();i++) visualized_values->SetValue(i, allElems[i]->CauchyStress(0,0));
         break;
 
-    case stress_yy:
+    case icy::Model::VisOpt::stress_yy:
         visualized_values->SetNumberOfValues(allElems.size());
         for(size_t i=0;i<allElems.size();i++) visualized_values->SetValue(i, allElems[i]->CauchyStress(1,1));
         break;
 
-    case stress_hydrostatic:
+    case icy::Model::VisOpt::stress_hydrostatic:
         visualized_values->SetNumberOfValues(allElems.size());
         for(size_t i=0;i<allElems.size();i++) visualized_values->SetValue(i, allElems[i]->CauchyStress.trace()/2);
         break;
 
-    case non_symm_measure:
+    case icy::Model::VisOpt::non_symm_measure:
         visualized_values->SetNumberOfValues(allElems.size());
         for(size_t i=0;i<allElems.size();i++)
         {
@@ -364,22 +314,22 @@ void icy::Mesh::UpdateValues()
         }
         break;
 
-    case ps1:
+    case icy::Model::VisOpt::ps1:
         visualized_values->SetNumberOfValues(allElems.size());
         for(size_t i=0;i<allElems.size();i++) visualized_values->SetValue(i, allElems[i]->principal_stress1);
         break;
 
-    case ps2:
+    case icy::Model::VisOpt::ps2:
         visualized_values->SetNumberOfValues(allElems.size());
         for(size_t i=0;i<allElems.size();i++) visualized_values->SetValue(i, allElems[i]->principal_stress2);
         break;
 
-    case shear_stress:
+    case icy::Model::VisOpt::shear_stress:
         visualized_values->SetNumberOfValues(allElems.size());
         for(size_t i=0;i<allElems.size();i++) visualized_values->SetValue(i, allElems[i]->max_shear_stress);
         break;
 
-    case volume_change:
+    case icy::Model::VisOpt::volume_change:
         visualized_values->SetNumberOfValues(allElems.size());
         for(size_t i=0;i<allElems.size();i++) visualized_values->SetValue(i, allElems[i]->volume_change);
         break;
@@ -393,7 +343,7 @@ void icy::Mesh::UpdateValues()
     double minmax[2];
     visualized_values->GetValueRange(minmax);
     hueLut->SetTableRange(minmax[0], minmax[1]);
-    if(VisualizingVariable == volume_change)
+    if(VisualizingVariable == icy::Model::VisOpt::volume_change)
     {
         double range = minmax[1]-minmax[0];
         hueLut->SetTableRange(1-range*0.75,1+range*0.75);
