@@ -17,6 +17,13 @@ void icy::Model::UnsafeUpdateGeometry()
     vtk_update_mutex.unlock();
 }
 
+void icy::Model::ChangeVisualizationOption(icy::Mesh::VisOpt option)
+{
+    vtk_update_mutex.lock();
+    mesh.ChangeVisualizationOption(option);
+    vtk_update_mutex.unlock();
+}
+
 
 void icy::Model::Reset(SimParams &prms)
 {
@@ -57,20 +64,15 @@ void icy::Model::InitialGuess(SimParams &prms, double timeStep, double timeStepF
 
 bool icy::Model::AssembleAndSolve(SimParams &prms, double timeStep)
 {
-    qDebug() << "assembling";
     eqOfMotion.ClearAndResize(mesh.freeNodeCount);
 
     unsigned nElems = mesh.allElems.size();
     unsigned nNodes = mesh.allNodes.size();
     unsigned nInteractions = mesh.collision_interactions.size();
 
-    qDebug() << "assembling - adding elems to sparcity structure " << nElems << " " << mesh.freeNodeCount;
+#pragma omp parallel for
+    for(unsigned i=0;i<nElems;i++) mesh.allElems[i]->AddToSparsityStructure(eqOfMotion);
 
-//#pragma omp parallel for
-    for(unsigned i=0;i<nElems;i++) {
-        qDebug() << "adding elem " << i;
-        mesh.allElems[i]->AddToSparsityStructure(eqOfMotion);
-    }
 /*
     mesh.DetectContactPairs(prms.InteractionDistance);
 
@@ -78,12 +80,9 @@ bool icy::Model::AssembleAndSolve(SimParams &prms, double timeStep)
     for(unsigned i=0;i<nInteractions;i++)
         mesh.collision_interactions[i].AddToSparsityStructure(eqOfMotion);
 */
-    qDebug() << "assembling - creating structure";
     eqOfMotion.CreateStructure();
 
     // assemble
-    qDebug() << "assembling - elems entries";
-
     bool mesh_iversion_detected = false;
 #pragma omp parallel for
     for(unsigned i=0;i<nElems;i++)
@@ -93,8 +92,6 @@ bool icy::Model::AssembleAndSolve(SimParams &prms, double timeStep)
     }
 
     if(mesh_iversion_detected) return false; // mesh inversion
-
-    qDebug() << "assembling - nodal entries";
 
 #pragma omp parallel for
     for(unsigned i=0;i<nNodes;i++) mesh.allNodes[i]->ComputeEquationEntries(eqOfMotion, prms, timeStep);
@@ -117,11 +114,9 @@ bool icy::Model::AssembleAndSolve(SimParams &prms, double timeStep)
     }
 */
     // solve
-    qDebug() << "solving";
     bool result = eqOfMotion.Solve();
 
     // pull
-    qDebug() << "pulling";
 #pragma omp parallel for
     for(std::size_t i=0;i<nNodes;i++)
     {
@@ -133,8 +128,6 @@ bool icy::Model::AssembleAndSolve(SimParams &prms, double timeStep)
             nd->xt+=delta_x;
         }
     }
-    qDebug() << "pulled";
-
     return result;
 }
 

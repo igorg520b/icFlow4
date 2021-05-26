@@ -30,24 +30,23 @@ bool icy::ModelController::Step(void)
 
         do
         {
-            std::cout << std::scientific << std::setprecision(1);
-            std::cout << (currentStep%2 ? ". " : "  ");
-            std::cout << attempt << "-";
-            std::cout << std::setw(4) <<std::right<< currentStep;
-            std::cout << "-"<< std::left << std::setw(2) << iter;
-
             if(abortRequested) {Aborting(); return false;}
             res = model.AssembleAndSolve(prms, h);
 
             double ratio = iter == 0 ? 0 : model.eqOfMotion.solution_norm/model.eqOfMotion.solution_norm_prev;
             converges = (model.eqOfMotion.solution_norm < prms.ConvergenceCutoff || ratio < prms.ConvergenceEpsilon);
+
+            std::cout << std::scientific << std::setprecision(1);
+            std::cout << (currentStep%2 ? ". " : "  ");
+            std::cout << attempt << "-";
+            std::cout << std::setw(4) <<std::right<< currentStep;
+            std::cout << "-"<< std::left << std::setw(2) << iter;
             std::cout << " obj " << std::setw(10) << model.eqOfMotion.objective_value;
             std::cout << " sln " << std::setw(10) << model.eqOfMotion.solution_norm;
             if(iter) std::cout << " ra " << std::setw(10) << ratio;
             else std::cout << "tsf " << std::setw(20) << timeStepFactor;
             std::cout << std::endl;
             iter++;
-
         } while(res && iter < prms.MaxIter && (iter < prms.MinIter || !converges));
 
         if(!res)

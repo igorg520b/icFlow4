@@ -62,7 +62,6 @@ void EquationOfMotionSolver::ClearAndResize(std::size_t N_)
 
 void EquationOfMotionSolver::AddElementToStructure(int row, int column)
 {
-    std::cout << "aets " << row << " " << column << std::endl;
     if(row < 0 || column < 0) return; // the element does not belong in the matrix
     else if((unsigned)row >= N || (unsigned)column >= N) throw std::runtime_error("trying to insert element beyond the matrix size");
 

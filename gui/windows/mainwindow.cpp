@@ -24,7 +24,7 @@ MainWindow::MainWindow(QWidget *parent)
     qt_vtk_widget->setRenderWindow(renderWindow);
 
     renderer->SetBackground(1.0,1.0,1.0);
-//    renderer->AddActor(modelController.model.mesh.actor_collisions);
+    renderer->AddActor(modelController.model.mesh.actor_collisions);
     renderer->AddActor(modelController.model.mesh.actor_mesh_deformable);
     renderer->AddActor(modelController.model.mesh.actor_boundary_all);
     renderer->AddActor(modelController.model.mesh.actor_boundary_intended_indenter);
@@ -120,16 +120,14 @@ MainWindow::MainWindow(QWidget *parent)
     renderWindow->Render();
 
     comboBox_visualizations->setCurrentIndex(settings.value("vis_option").toInt());
+
+    pbrowser->setActiveObject(&modelController.prms);
+    sliderValueChanged(0);
+    updateGUI();
 }
 
 void MainWindow::showEvent( QShowEvent*)
 {
-    pbrowser->setActiveObject(&modelController.prms);
-    QSettings settings(m_sSettingsFile);
-//    comboBox_visualizations->setCurrentIndex(settings.value("vis_option").toInt());
-    sliderValueChanged(0);
-    updateGUI();
-//    renderWindow->Render();
 }
 
 
@@ -244,7 +242,7 @@ void MainWindow::comboboxIndexChanged_visualizations(int index)
 void MainWindow::sliderValueChanged(int val)
 {
 //    qDebug() << "slider " << val;
-    double offset = 1.5 * 0.001 * val;
+    double offset = 1.1 * 0.001 * val;
     icy::MeshFragment &indenter = modelController.model.mesh.indenter;
     unsigned n = indenter.nodes.size();
     Eigen::Vector2d y_direction = Eigen::Vector2d(0,-1.0);

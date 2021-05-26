@@ -113,13 +113,10 @@ target_include_directories(fl4 PUBLIC gui/interactor)
 
 # some paths need to be set manually
 target_include_directories(fl4 PUBLIC /home/s2/Projects-libraries/eigen)
-#target_include_directories(fl4 PUBLIC /home/s2/Projects-libraries/oneTBB/include/)
 target_include_directories(fl4 PUBLIC /home/s2/Projects-libraries/vtk/Common/Core/)
 target_include_directories(fl4 PUBLIC /home/s2/Projects-libraries/gmsh-4.8.4-source/api)
 
 target_link_directories(fl4 PUBLIC /usr/local/lib)
-#target_link_directories(fl4 PUBLIC /home/s2/Projects-libraries/oneTBB/build/gnu_10.3_cxx11_64_release)
-#target_link_directories(fl4 PUBLIC /home/s2/Projects-libraries/oneTBB_old/build/linux_intel64_gcc_cc9.3.0_libc2.31_kernel5.4.0_release)
 target_link_directories(fl4 PUBLIC /home/s2/Projects-libraries/gmsh-build)
 
 target_link_libraries(fl4 PRIVATE Qt5::Widgets Qt5::Charts Qt5::Core)

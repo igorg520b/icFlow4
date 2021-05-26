@@ -28,11 +28,11 @@
 #include <vtkCellArray.h>
 #include <vtkCellData.h>
 
-namespace icy { class Mesh; }
+namespace icy { class Mesh; class Model; }
 
 class icy::Mesh : public QObject
 {
-        Q_OBJECT
+    Q_OBJECT
 
 public:
     Mesh();
@@ -64,11 +64,11 @@ public:
     void Reset(double CharacteristicLengthMax);
     void DetectContactPairs(double distance_threshold);
 
-    void UnsafeUpdateGeometry();    // called from the main thread
-    void UpdateValues();
     void ChangeVisualizationOption(VisOpt option);  // called from the main thread
 
 private:
+    void UpdateValues();
+    void UnsafeUpdateGeometry();
     void RegenerateVisualizedGeometry();    // from the collection of individual meshes, build allNodes, allElems, etc.
     double static SegmentPointDistance(Eigen::Vector2d A, Eigen::Vector2d B, Eigen::Vector2d P, Eigen::Vector2d &D, double &t);
     VisOpt VisualizingVariable = VisOpt::none;
@@ -80,7 +80,6 @@ private:
     // elements
     vtkNew<vtkUnstructuredGrid> ugrid_deformable;
     vtkNew<vtkCellArray> cellArray_deformable;
-    vtkNew<vtkUnsignedCharArray> type_array_deformable;
     vtkNew<vtkDataSetMapper> dataSetMapper_deformable;
 
     // boundary
@@ -90,7 +89,7 @@ private:
 
     // boundary-intended
     vtkNew<vtkUnstructuredGrid> ugrid_indenter_intended;
-//    vtkNew<vtkCellArray> cellArray_indenter_intended;
+    vtkNew<vtkCellArray> cellArray_indenter_intended;
     vtkNew<vtkDataSetMapper> dataSetMapper_indenter_intended;
 
     // collisions
@@ -188,5 +187,7 @@ private:
   0.258322}, {0.867625, 0.483389, 0.244888}, {0.862037, 0.454924,
   0.231453}, {0.856449, 0.426459, 0.218019}, {0.850862, 0.397993,
   0.204584}, {0.845274, 0.369528, 0.19115}};
+
+    friend class icy::Model;
 };
 #endif

@@ -11,7 +11,7 @@
 icy::Mesh::Mesh()
 {
     InitializeLUT(2);
-//    visualized_values->SetName("visualized_values");
+    visualized_values->SetName("visualized_values");
 
     ugrid_deformable->SetPoints(points_deformable);
     dataSetMapper_deformable->SetInputData(ugrid_deformable);
@@ -42,12 +42,9 @@ icy::Mesh::Mesh()
     actor_boundary_all->GetProperty()->SetLineWidth(3);
     actor_boundary_all->PickableOff();
 
-    /*
-
     // indenter's intended position
     ugrid_indenter_intended->SetPoints(points_indenter_intended);
     dataSetMapper_indenter_intended->SetInputData(ugrid_indenter_intended);
-
     actor_boundary_intended_indenter->SetMapper(dataSetMapper_indenter_intended);
     actor_boundary_intended_indenter->GetProperty()->EdgeVisibilityOn();
     actor_boundary_intended_indenter->GetProperty()->VertexVisibilityOn();
@@ -57,6 +54,7 @@ icy::Mesh::Mesh()
     actor_boundary_intended_indenter->GetProperty()->SetPointSize(2);
     actor_boundary_intended_indenter->GetProperty()->SetLineWidth(1);
 
+    /*
     // collisions
     ugrid_collisions->SetPoints(points_collisions);
     mapper_collisions->SetInputData(ugrid_collisions);
@@ -108,7 +106,7 @@ void icy::Mesh::RegenerateVisualizedGeometry()
     points_deformable->SetNumberOfPoints(allNodes.size());
     cellArray_deformable->Reset();
 
-    // create ugrid
+    // deformable material - elements
     for(icy::Element *tr : allElems)
     {
         vtkIdType pts[3] = {tr->nds[0]->globId, tr->nds[1]->globId, tr->nds[2]->globId};
@@ -117,15 +115,25 @@ void icy::Mesh::RegenerateVisualizedGeometry()
     ugrid_deformable->SetCells(VTK_TRIANGLE, cellArray_deformable);
 
 
+    // all boundaries
     cellArray_boundary_all->Reset();
-
     for(auto edge : allBoundaryEdges)
     {
         vtkIdType pts[2] = {edge.first->globId, edge.second->globId};
         cellArray_boundary_all->InsertNextCell(2, pts);
     }
-
     ugrid_boundary_all->SetCells(VTK_LINE, cellArray_boundary_all);
+
+
+    // intended position of the indenter
+    points_indenter_intended->SetNumberOfPoints(indenter.nodes.size());
+    cellArray_indenter_intended->Reset();
+    for(auto edge : indenter.boundary_edges)
+    {
+        vtkIdType pts[2] = {edge.first->locId, edge.second->locId};
+        cellArray_indenter_intended->InsertNextCell(2, pts);
+    }
+    ugrid_indenter_intended->SetCells(VTK_LINE, cellArray_indenter_intended);
 
 }
 
@@ -146,11 +154,9 @@ double icy::Mesh::SegmentPointDistance(Eigen::Vector2d A, Eigen::Vector2d B, Eig
 
 void icy::Mesh::ChangeVisualizationOption(VisOpt option)
 {
-    /*
     qDebug() << "icy::Model::ChangeVisualizationOption " << option;
     if(VisualizingVariable == option) return; // option did not change
     VisualizingVariable = option;
-
 
     if(VisualizingVariable == VisOpt::none)
     {
@@ -168,7 +174,6 @@ void icy::Mesh::ChangeVisualizationOption(VisOpt option)
         dataSetMapper_deformable->ScalarVisibilityOn();
     }
     UpdateValues();
-    */
 }
 
 
@@ -181,6 +186,12 @@ void icy::Mesh::UnsafeUpdateGeometry()
     for(icy::Node *nd : allNodes) points_deformable->SetPoint((vtkIdType)nd->globId, nd->xn.data());
     points_deformable->Modified();
 
+    // indenter intended points
+    for(icy::Node &nd : indenter.nodes)
+        points_indenter_intended->SetPoint((vtkIdType)nd.locId, nd.intended_position.data());
+    points_indenter_intended->Modified();
+
+    if(VisualizingVariable != VisOpt::none) UpdateValues();
 
 
 /*
@@ -199,70 +210,8 @@ void icy::Mesh::UnsafeUpdateGeometry()
     poly_data->GetPointData()->AddArray(glyph_int_data);
     poly_data->GetPointData()->SetActiveScalars("glyph_int_data");
 */
-    // boundary
 
     /*
-    cellArray_boundary->Reset();
-    for(unsigned i=0;i<mesh.boundary.size();i++)
-    {
-        int idx1 = mesh.boundary[i].first;
-        int idx2 = mesh.boundary[i].second;
-        pts2[0]=idx1;
-        pts2[1]=idx2;
-        cellArray_boundary->InsertNextCell(2, pts2);
-    }
-    ugrid_boundary->SetCells(VTK_LINE, cellArray_boundary);
-
-    // indenter
-    points_indenter->SetNumberOfPoints(mesh.nodes_indenter.size());
-    count=0;
-    for(icy::Node &nd : mesh.nodes_indenter)
-    {
-        x[0]=nd.xn.x();
-        x[1]=nd.xn.y();
-        x[2]=0;
-        points_indenter->SetPoint(count, x);
-        count++;
-    }
-    points_indenter->Modified();
-
-    cellArray_indenter->Reset();
-    for(unsigned i=0;i<mesh.boundary_indenter.size();i++)
-    {
-        int idx1 = mesh.boundary_indenter[i].first;
-        int idx2 = mesh.boundary_indenter[i].second;
-        pts2[0]=idx1;
-        pts2[1]=idx2;
-        cellArray_indenter->InsertNextCell(2, pts2);
-    }
-    ugrid_indenter->SetCells(VTK_LINE, cellArray_indenter);
-
-    // indenter_intended
-    points_indenter_intended->SetNumberOfPoints(mesh.nodes_indenter.size());
-    count=0;
-    for(icy::Node &nd : mesh.nodes_indenter)
-    {
-        x[0]=nd.intended_position.x();
-        x[1]=nd.intended_position.y();
-        x[2]=0;
-        points_indenter_intended->SetPoint(count, x);
-        count++;
-    }
-    points_indenter_intended->Modified();
-
-    cellArray_indenter_intended->Reset();
-    for(unsigned i=0;i<mesh.boundary_indenter.size();i++)
-    {
-        int idx1 = mesh.boundary_indenter[i].first;
-        int idx2 = mesh.boundary_indenter[i].second;
-        pts2[0]=idx1;
-        pts2[1]=idx2;
-        cellArray_indenter_intended->InsertNextCell(2, pts2);
-    }
-    ugrid_indenter_intended->SetCells(VTK_LINE, cellArray_indenter_intended);
-
-    if(VisualizingVariable != VisOpt::none) UpdateValues();
-
     // collisions
     ugrid_collisions->Reset();
     ugrid_collisions->SetPoints(points_collisions);
@@ -369,78 +318,75 @@ void icy::Mesh::DetectContactPairs(double distance_threshold)
 
 void icy::Mesh::UpdateValues()
 {
-    /*
-    if(mesh.nodes.size()==0)
+    if(allNodes.size()==0)
     {
-        dataSetMapper->ScalarVisibilityOff();
-        ugrid->GetPointData()->RemoveArray("visualized_values");
-        ugrid->GetCellData()->RemoveArray("visualized_values");
+        dataSetMapper_deformable->ScalarVisibilityOff();
+        ugrid_deformable->GetPointData()->RemoveArray("visualized_values");
+        ugrid_deformable->GetCellData()->RemoveArray("visualized_values");
         return;
     }
 
-    vtk_update_mutex.lock();
     switch(VisualizingVariable)
     {
         case elem_area:
-        visualized_values->SetNumberOfValues(mesh.elems.size());
-        for(size_t i=0;i<mesh.elems.size();i++) visualized_values->SetValue(i, mesh.elems[i].area_initial);
+        visualized_values->SetNumberOfValues(allElems.size());
+        for(size_t i=0;i<allElems.size();i++) visualized_values->SetValue(i, allElems[i]->area_initial);
         break;
 
     case energy_density:
-        visualized_values->SetNumberOfValues(mesh.elems.size());
-        for(size_t i=0;i<mesh.elems.size();i++) visualized_values->SetValue(i, mesh.elems[i].strain_energy_density);
+        visualized_values->SetNumberOfValues(allElems.size());
+        for(size_t i=0;i<allElems.size();i++) visualized_values->SetValue(i, allElems[i]->strain_energy_density);
         break;
 
     case stress_xx:
-        visualized_values->SetNumberOfValues(mesh.elems.size());
-        for(size_t i=0;i<mesh.elems.size();i++) visualized_values->SetValue(i, mesh.elems[i].CauchyStress(0,0));
+        visualized_values->SetNumberOfValues(allElems.size());
+        for(size_t i=0;i<allElems.size();i++) visualized_values->SetValue(i, allElems[i]->CauchyStress(0,0));
         break;
 
     case stress_yy:
-        visualized_values->SetNumberOfValues(mesh.elems.size());
-        for(size_t i=0;i<mesh.elems.size();i++) visualized_values->SetValue(i, mesh.elems[i].CauchyStress(1,1));
+        visualized_values->SetNumberOfValues(allElems.size());
+        for(size_t i=0;i<allElems.size();i++) visualized_values->SetValue(i, allElems[i]->CauchyStress(1,1));
         break;
 
     case stress_hydrostatic:
-        visualized_values->SetNumberOfValues(mesh.elems.size());
-        for(size_t i=0;i<mesh.elems.size();i++) visualized_values->SetValue(i, mesh.elems[i].CauchyStress.trace()/2);
+        visualized_values->SetNumberOfValues(allElems.size());
+        for(size_t i=0;i<allElems.size();i++) visualized_values->SetValue(i, allElems[i]->CauchyStress.trace()/2);
         break;
 
     case non_symm_measure:
-        visualized_values->SetNumberOfValues(mesh.elems.size());
-        for(size_t i=0;i<mesh.elems.size();i++)
+        visualized_values->SetNumberOfValues(allElems.size());
+        for(size_t i=0;i<allElems.size();i++)
         {
-            Element &elem = mesh.elems[i];
-            double value1 = elem.CauchyStress(0,1)-elem.CauchyStress(1,0);
+            Element *elem = allElems[i];
+            double value1 = elem->CauchyStress(0,1)-elem->CauchyStress(1,0);
             double value = value1*value1;
             visualized_values->SetValue(i, value);
         }
         break;
 
     case ps1:
-        visualized_values->SetNumberOfValues(mesh.elems.size());
-        for(size_t i=0;i<mesh.elems.size();i++) visualized_values->SetValue(i, mesh.elems[i].principal_stress1);
+        visualized_values->SetNumberOfValues(allElems.size());
+        for(size_t i=0;i<allElems.size();i++) visualized_values->SetValue(i, allElems[i]->principal_stress1);
         break;
 
     case ps2:
-        visualized_values->SetNumberOfValues(mesh.elems.size());
-        for(size_t i=0;i<mesh.elems.size();i++) visualized_values->SetValue(i, mesh.elems[i].principal_stress2);
+        visualized_values->SetNumberOfValues(allElems.size());
+        for(size_t i=0;i<allElems.size();i++) visualized_values->SetValue(i, allElems[i]->principal_stress2);
         break;
 
     case shear_stress:
-        visualized_values->SetNumberOfValues(mesh.elems.size());
-        for(size_t i=0;i<mesh.elems.size();i++) visualized_values->SetValue(i, mesh.elems[i].max_shear_stress);
+        visualized_values->SetNumberOfValues(allElems.size());
+        for(size_t i=0;i<allElems.size();i++) visualized_values->SetValue(i, allElems[i]->max_shear_stress);
         break;
 
     case volume_change:
-        visualized_values->SetNumberOfValues(mesh.elems.size());
-        for(size_t i=0;i<mesh.elems.size();i++) visualized_values->SetValue(i, mesh.elems[i].volume_change);
+        visualized_values->SetNumberOfValues(allElems.size());
+        for(size_t i=0;i<allElems.size();i++) visualized_values->SetValue(i, allElems[i]->volume_change);
         break;
 
     default:
         break;
     }
-    vtk_update_mutex.unlock();
 
     visualized_values->Modified();
 
@@ -452,7 +398,6 @@ void icy::Mesh::UpdateValues()
         double range = minmax[1]-minmax[0];
         hueLut->SetTableRange(1-range*0.75,1+range*0.75);
     }
-*/
 }
 
 void icy::Mesh::InitializeLUT(int table)
