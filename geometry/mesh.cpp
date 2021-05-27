@@ -241,7 +241,7 @@ void icy::Mesh::AddToNarrowListIfNeeded(Node *ndA, Node *ndB, Node *ndP, double 
 void icy::Mesh::DetectContactPairs(double distance_threshold)
 {
     unsigned nEdges = allBoundaryEdges.size();
-
+    broadphase_list.clear();
     for(unsigned idx1=0;idx1<nEdges;idx1++)
         for(unsigned idx2=0;idx2<idx1;idx2++)
             broadphase_list.push_back(std::make_pair(idx1,idx2));

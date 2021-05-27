@@ -12,16 +12,25 @@
 
 #include "parameters_sim.h"
 #include "equationofmotionsolver.h"
+#include "modelcontrollerinterface.h"
 
 #include <Eigen/Core>
 
 namespace icy { class Model; class Mesh; class Node; class Element; }
 
-class icy::Model : public QObject
+class icy::Model : public QObject, public ModelControllerInterface
 {
     Q_OBJECT
 
 public:
+    void Prepare(void) override;
+    bool Step(void) override;
+    void RequestAbort(void) override;
+
+    SimParams prms;
+
+    int currentStep = 0;
+    double timeStepFactor = 1;
 
     // visualization options
     enum VisOpt { none, elem_area, energy_density, stress_xx, stress_yy, stress_hydrostatic, non_symm_measure,
@@ -45,12 +54,15 @@ public:
     double avgSeparationDistance = -1;
 
 private:
+    bool abortRequested = false;
+    void Aborting();       // called before exiting Step() if aborted
     QMutex vtk_update_mutex; // to prevent modifying mesh data while updating VTK representation
     bool vtk_update_requested = false;  // true when signal has been already emitted to update vtk geometry
 
 signals:
     void requestGeometryUpdate(); // this goes to the main thread, which calls UnsafeUpdateGeometry()
-    void propertyChanged();
+    void stepCompleted();
+    void stepAborted();
 };
 
 #endif // MESHCOLLECTION_H

@@ -10,16 +10,5 @@ public:
     virtual void RequestAbort(void) = 0;
 };
 
-class ModelControllerTest : public ModelControllerInterface
-{
-public:
-    int counter = 0;
-    bool abortRequested = false;
-
-    void Prepare(void) override;
-    bool Step(void) override;
-    void RequestAbort(void) override;
-};
-
 
 #endif // MODELCONTROLLERINTERFACE_H

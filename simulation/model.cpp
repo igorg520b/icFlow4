@@ -6,6 +6,7 @@
 icy::Model::Model()
 {
     mesh = new icy::Mesh();
+    Reset(prms);
 }
 
 icy::Model::~Model()
@@ -13,6 +14,85 @@ icy::Model::~Model()
     delete mesh;
 }
 
+
+void icy::Model::Prepare(void)
+{
+    abortRequested = false;
+    timeStepFactor = 1;
+}
+
+bool icy::Model::Step(void)
+{
+    int iter, attempt = 0;
+    bool converges=false;
+    bool res; // false if matrix is not PSD
+    double h;
+    do
+    {
+        h = prms.InitialTimeStep/timeStepFactor; // time step
+        InitialGuess(prms, h, timeStepFactor);
+        iter = 0;
+
+        do
+        {
+            if(abortRequested) {Aborting(); return false;}
+            res = AssembleAndSolve(prms, h);
+
+            double ratio = iter == 0 ? 0 : eqOfMotion.solution_norm/eqOfMotion.solution_norm_prev;
+            converges = (eqOfMotion.solution_norm < prms.ConvergenceCutoff || ratio < prms.ConvergenceEpsilon);
+
+            std::cout << std::scientific << std::setprecision(1);
+            std::cout << (currentStep%2 ? ". " : "  ");
+            std::cout << attempt << "-";
+            std::cout << std::setw(4) <<std::right<< currentStep;
+            std::cout << "-"<< std::left << std::setw(2) << iter;
+            std::cout << " obj " << std::setw(10) << eqOfMotion.objective_value;
+            std::cout << " sln " << std::setw(10) << eqOfMotion.solution_norm;
+            if(iter) std::cout << " ra " << std::setw(10) << ratio;
+            else std::cout << "tsf " << std::setw(20) << timeStepFactor;
+            std::cout << std::endl;
+            iter++;
+        } while(res && iter < prms.MaxIter && (iter < prms.MinIter || !converges));
+
+        if(!res)
+        {
+            qDebug() << "Q not PSD";
+            attempt++;
+            timeStepFactor*=2;
+        }
+        else if(!converges)
+        {
+            qDebug() << "sln did not converge";
+            attempt++;
+            timeStepFactor*=2;
+        }
+        if(attempt > 20) throw std::runtime_error("could not solve");
+    } while (!res || !converges);
+
+    if(timeStepFactor > 1) timeStepFactor /= 1.2;
+    if(timeStepFactor < 1) timeStepFactor=1;
+    // accept step
+    AcceptTentativeValues(h);
+    std::cout << std::endl;
+    currentStep++;
+
+    emit stepCompleted();
+    return(currentStep < prms.MaxSteps);
+}
+
+void icy::Model::RequestAbort(void)
+{
+    abortRequested = true;
+}
+
+
+void icy::Model::Aborting()
+{
+    //perform any cleanup if step was aborted
+    qDebug() << "icy::ModelController::Aborting()";
+    abortRequested = false;
+    emit stepAborted();
+}
 
 void icy::Model::UnsafeUpdateGeometry()
 {

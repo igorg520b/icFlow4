@@ -71,7 +71,7 @@
 #include "objectpropertybrowser.h"
 //#include "preferences_gui.h"
 
-#include "modelcontroller.h"
+#include "model.h"
 #include "backgroundworker.h"
 
 QT_BEGIN_NAMESPACE
@@ -110,7 +110,7 @@ private slots:
 
 private:
 //    PreferencesGUI prefsGUI;
-    icy::ModelController modelController;
+    icy::Model model;
     BackgroundWorker *worker;
 
     QString m_sSettingsFile = "ic4_config";
@@ -133,8 +133,6 @@ private:
     QVTKOpenGLNativeWidget *qt_vtk_widget;
 
     vtkNew<vtkRenderer> renderer;
-//    vtkNew<vtkPointPicker> pointPicker;
-//    vtkNew<vtkInteractorStyleRubberBand2D> interactorStyleRB2D;
     vtkNew<SpecialSelector2D> specialSelector2D;
 
     vtkNew<vtkScalarBarActor> scalarBar;

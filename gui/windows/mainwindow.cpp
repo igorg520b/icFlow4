@@ -10,11 +10,11 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-    worker = new BackgroundWorker(&modelController);
+    worker = new BackgroundWorker(&model);
 
 //    connect(&controller.model, SIGNAL(requestGeometryUpdate()), SLOT(render_results()));
-    connect(&modelController, SIGNAL(stepAborted()),SLOT(updateGUI()));
-    connect(&modelController, SIGNAL(stepCompleted()), SLOT(updateGUI()));
+    connect(&model, SIGNAL(stepAborted()),SLOT(updateGUI()));
+    connect(&model, SIGNAL(stepCompleted()), SLOT(updateGUI()));
     connect(worker, SIGNAL(workerPaused()), SLOT(background_worker_paused()));
 
     // property browser
@@ -25,10 +25,10 @@ MainWindow::MainWindow(QWidget *parent)
     qt_vtk_widget->setRenderWindow(renderWindow);
 
     renderer->SetBackground(1.0,1.0,1.0);
-    renderer->AddActor(modelController.model.mesh->actor_collisions);
-    renderer->AddActor(modelController.model.mesh->actor_mesh_deformable);
-    renderer->AddActor(modelController.model.mesh->actor_boundary_all);
-    renderer->AddActor(modelController.model.mesh->actor_boundary_intended_indenter);
+    renderer->AddActor(model.mesh->actor_collisions);
+    renderer->AddActor(model.mesh->actor_mesh_deformable);
+    renderer->AddActor(model.mesh->actor_boundary_all);
+    renderer->AddActor(model.mesh->actor_boundary_intended_indenter);
 
     renderWindow->AddRenderer(renderer);
     renderWindow->GetInteractor()->SetInteractorStyle(specialSelector2D);
@@ -105,7 +105,7 @@ MainWindow::MainWindow(QWidget *parent)
     camera->Modified();
 
     renderer->AddActor(scalarBar);
-    scalarBar->SetLookupTable(modelController.model.mesh->hueLut);
+    scalarBar->SetLookupTable(model.mesh->hueLut);
 
     scalarBar->SetMaximumWidthInPixels(130);
     scalarBar->SetBarRatio(0.07);
@@ -122,7 +122,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     comboBox_visualizations->setCurrentIndex(settings.value("vis_option").toInt());
 
-    pbrowser->setActiveObject(&modelController.prms);
+    pbrowser->setActiveObject(&model.prms);
     sliderValueChanged(0);
     updateGUI();
 }
@@ -162,7 +162,7 @@ void MainWindow::on_action_simulation_start_triggered(bool checked)
     if(!worker->running && checked){
         qDebug() << "start button - starting";
         statusLabel->setText("starting simulation");
-        modelController.Prepare();
+        model.Prepare();
 
         worker->Resume();
     }
@@ -189,7 +189,7 @@ void MainWindow::background_worker_paused()
 
 void MainWindow::render_results()
 {
-    modelController.model.UnsafeUpdateGeometry();
+    model.UnsafeUpdateGeometry();
     renderWindow->Render();
 }
 
@@ -197,8 +197,8 @@ void MainWindow::render_results()
 void MainWindow::on_action_simulation_single_step_triggered()
 {
     qDebug() << "take one step";
-    modelController.Prepare();
-    modelController.Step();
+    model.Prepare();
+    model.Step();
 }
 
 void MainWindow::on_action_camera_reset_triggered()
@@ -221,9 +221,9 @@ void MainWindow::updateGUI()
     bool r = worker->running;
     ui->action_simulation_single_step->setEnabled(!r);
 
-    labelStepCount->setText(QString{"step: %1"}.arg(modelController.currentStep));
-    statusLabelStepFactor->setText(QString{"%1"}.arg(modelController.timeStepFactor, 6, 'f', 3, '0'));
-    labelAvgSeparationDistance->setText(QString{"%1"}.arg(modelController.model.avgSeparationDistance, 6, 'f', 3, '0'));
+    labelStepCount->setText(QString{"step: %1"}.arg(model.currentStep));
+    statusLabelStepFactor->setText(QString{"%1"}.arg(model.timeStepFactor, 6, 'f', 3, '0'));
+    labelAvgSeparationDistance->setText(QString{"%1"}.arg(model.avgSeparationDistance, 6, 'f', 3, '0'));
 
     render_results();
 }
@@ -233,7 +233,7 @@ void MainWindow::updateGUI()
 void MainWindow::comboboxIndexChanged_visualizations(int index)
 {
     qDebug() << "comboboxIndexChanged_visualizations " << index;
-    modelController.model.ChangeVisualizationOption((icy::Model::VisOpt)index);
+    model.ChangeVisualizationOption((icy::Model::VisOpt)index);
     scalarBar->SetVisibility(index != 0);
     renderWindow->Render();
 }
@@ -242,7 +242,7 @@ void MainWindow::comboboxIndexChanged_visualizations(int index)
 
 void MainWindow::sliderValueChanged(int val)
 {
-    modelController.model.PositionIndenter(1.1 * 0.001 * val);
+    model.PositionIndenter(1.1 * 0.001 * val);
     render_results();
 }
 

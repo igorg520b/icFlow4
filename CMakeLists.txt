@@ -69,11 +69,7 @@ add_executable(fl4
     gui/backgroundworker.cpp
     gui/backgroundworker.h
 
-    simulation/modelcontrollerinterface.cpp
     simulation/modelcontrollerinterface.h
-
-    simulation/modelcontroller.cpp
-    simulation/modelcontroller.h
 
     geometry/node.cpp
     geometry/node.h
@@ -85,7 +81,6 @@ add_executable(fl4
     geometry/meshfragment.h
     geometry/mesh.cpp
     geometry/mesh.h
-
 
     simulation/parameters_sim.h
     simulation/model.cpp
