@@ -90,41 +90,31 @@ void icy::BVHN::Initialize(std::vector<BVHN*> *bvs, int level_)
     {
         child1 = left->front();
         child1->level=level+1;
-        if(!child1->isLeaf) throw std::runtime_error("lone child is not leaf");
-    } else if(left->size() > 1)
+//        if(!child1->isLeaf) throw std::runtime_error("lone child is not leaf");
+    }
+    else if(left->size() > 1)
     {
         child1 = BVHNFactory.take();
+        child1->test_self_collision = this->test_self_collision;
         child1->Initialize(left, level+1);
-    } else throw std::runtime_error("left.size < 1");
+    }
+    else throw std::runtime_error("left.size < 1");
     VectorFactory.release(left);
 
     if(right->size() == 1)
     {
         child2 = right->front();
         child2->level=level+1;
-        if(!child2->isLeaf) throw std::runtime_error("lone child is not leaf");
-    } else if(right->size() > 1)
+//        if(!child2->isLeaf) throw std::runtime_error("lone child is not leaf");
+    }
+    else if(right->size() > 1)
     {
         child2 = BVHNFactory.take();
+        child2->test_self_collision = this->test_self_collision;
         child2->Initialize(right, level+1);
-    } else throw std::runtime_error("right.size < 1");
+    }
+    else throw std::runtime_error("right.size < 1");
     VectorFactory.release(right);
-}
-
-void icy::BVHN::UpdateLeaf()
-{
-    /*
-    if(!isLeaf || elem==nullptr) throw std::runtime_error("BVHN::UpdateLeaf error");
-    box.Reset();
-    Node *nd = elem->vrts[0];
-    box.Expand(nd->tx, nd->ty, nd->tz);
-    nd = elem->vrts[1];
-    box.Expand(nd->tx, nd->ty, nd->tz);
-    nd = elem->vrts[2];
-    box.Expand(nd->tx, nd->ty, nd->tz);
-    nd = elem->vrts[3];
-    box.Expand(nd->tx, nd->ty, nd->tz);
-    */
 }
 
 void icy::BVHN::Update()
@@ -138,7 +128,7 @@ void icy::BVHN::Update()
     box.Expand(child2->box);
 }
 
-void icy::BVHN::SelfCollide(std::vector<unsigned> &broad_list)
+void icy::BVHN::SelfCollide(std::vector<std::pair<unsigned,unsigned>> &broad_list)
 {
     if (isLeaf) return;
     child1->SelfCollide(broad_list);
@@ -146,13 +136,13 @@ void icy::BVHN::SelfCollide(std::vector<unsigned> &broad_list)
     child1->Collide(child2, broad_list);
 }
 
-void icy::BVHN::Collide(BVHN *b, std::vector<unsigned> &broad_list)
+void icy::BVHN::Collide(BVHN *b, std::vector<std::pair<unsigned,unsigned>> &broad_list)
 {
     if(!box.Overlaps(b->box)) return;
     if (this->isLeaf && b->isLeaf)
     {
-        broad_list.push_back(featureIdx);
-        broad_list.push_back(b->featureIdx);
+        broad_list.push_back(feature);
+        broad_list.push_back(b->feature);
     }
     else if (this->isLeaf)
     {

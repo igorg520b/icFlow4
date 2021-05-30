@@ -2,6 +2,8 @@
 #include <gmsh.h>
 #include <unordered_set>
 
+icy::ConcurrentPool<icy::BVHN> icy::MeshFragment::BVHNLeafFactory(50000);
+
 
 void icy::MeshFragment::GenerateBrick(double ElementSize)
 {
@@ -147,17 +149,54 @@ void icy::MeshFragment::GetFromGmsh()
     {
         int idx1 = mtags[nodeTagsInEdges[i*2+0]];
         int idx2 = mtags[nodeTagsInEdges[i*2+1]];
-        Node *nd1 = &nodes[idx1];
-        Node *nd2 = &nodes[idx2];
-        boundary_edges[i]=std::make_pair(nd1,nd2);
         set_nds.insert(idx1);
         set_nds.insert(idx2);
+        Node *nd1, *nd2;
+        if(idx1<idx2)
+        {
+            nd1 = &nodes[idx1];
+            nd2 = &nodes[idx2];
+        }
+        else
+        {
+            nd1 = &nodes[idx2];
+            nd2 = &nodes[idx1];
+        }
+        boundary_edges[i]=std::make_pair(nd1,nd2);
     }
 
     boundary_nodes.resize(set_nds.size());
     std::copy(set_nds.begin(), set_nds.end(), boundary_nodes.begin());
     gmsh::clear();
 }
+
+void icy::MeshFragment::GenerateLeafs()
+{
+    leafs_for_ccd.clear();
+    leafs_for_contact.clear();
+    leafs_for_ccd.reserve(boundary_edges.size());
+    leafs_for_contact.reserve(boundary_edges.size());
+
+    for(auto edge : boundary_edges)
+    {
+        Node *nd1 = edge.first;
+        Node *nd2 = edge.second;
+        BVHN *leaf_ccd = BVHNLeafFactory.take();
+        BVHN *leaf_contact = BVHNLeafFactory.take();
+
+        leaf_contact->feature = leaf_ccd->feature = std::make_pair(nd1->globId, nd2->globId);
+        leaf_contact->test_self_collision = leaf_ccd->test_self_collision = false;
+
+        leafs_for_ccd.push_back(leaf_ccd);
+        leafs_for_contact.push_back(leaf_contact);
+
+
+    }
+
+}
+
+
+
 
 /*
 

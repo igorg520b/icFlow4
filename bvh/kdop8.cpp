@@ -22,7 +22,7 @@ bool icy::kDOP8::Overlaps(kDOP8 &b)
     return true;
 }
 
-void icy::kDOP8::Expand(double x, double y)
+void icy::kDOP8::Expand(float x, float y)
 {
     MinMax(x, d[0], g[0]);
     MinMax(y, d[1], g[1]);
@@ -48,7 +48,16 @@ void icy::kDOP8::Expand(kDOP8 &b)
     dY = g[1] - d[1];
 }
 
-void icy::kDOP8::MinMax(double p, double &mi, double &ma)
+void icy::kDOP8::ExpandBy(float radius)
+{
+    for(unsigned i=0;i<4;i++)
+    {
+        d[i]-=radius;
+        g[i]+=radius;
+    }
+}
+
+void icy::kDOP8::MinMax(float p, float &mi, float &ma)
 {
     if (p < mi) mi = p;
     if (p > ma) ma = p;

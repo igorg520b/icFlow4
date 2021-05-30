@@ -14,6 +14,11 @@ icy::Model::~Model()
     delete mesh;
 }
 
+void icy::Model::Reset(SimParams &prms)
+{
+    mesh->Reset(prms.CharacteristicLength);
+    UnsafeUpdateGeometry();
+}
 
 void icy::Model::Prepare(void)
 {
@@ -123,11 +128,7 @@ void icy::Model::PositionIndenter(double offset)
 }
 
 
-void icy::Model::Reset(SimParams &prms)
-{
-    mesh->Reset(prms.CharacteristicLength);
-    UnsafeUpdateGeometry();
-}
+
 
 
 

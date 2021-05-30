@@ -68,6 +68,9 @@ icy::Mesh::Mesh()
 
     collision_interactions.reserve(10000);
     broadphase_list.reserve(100000);
+
+    root.isLeaf = false;
+    root.test_self_collision = true;
 }
 
 
@@ -79,6 +82,7 @@ void icy::Mesh::Reset(double CharacteristicLengthMax)
     allMeshes.push_back(&brick);
     allMeshes.push_back(&indenter);
     RegenerateVisualizedGeometry();
+    tree_update_counter=0;
 }
 
 void icy::Mesh::RegenerateVisualizedGeometry()
@@ -88,6 +92,10 @@ void icy::Mesh::RegenerateVisualizedGeometry()
     allBoundaryEdges.clear();
     unsigned count = 0;
     freeNodeCount = 0;
+
+    global_leafs_ccd.clear();
+    global_leafs_contact.clear();
+    fragmentRoots.clear();
 
     for(MeshFragment *mf : allMeshes)
     {
@@ -102,6 +110,9 @@ void icy::Mesh::RegenerateVisualizedGeometry()
 
         for(unsigned i=0;i<mf->elems.size();i++) allElems.push_back(&mf->elems[i]);
         allBoundaryEdges.insert(allBoundaryEdges.end(), mf->boundary_edges.begin(), mf->boundary_edges.end());
+        global_leafs_ccd.insert(global_leafs_ccd.end(), mf->leafs_for_ccd.begin(), mf->leafs_for_ccd.end());
+        global_leafs_contact.insert(global_leafs_contact.end(),mf->leafs_for_contact.begin(), mf->leafs_for_contact.end());
+        fragmentRoots.push_back(&mf->root);
     }
 
     points_deformable->SetNumberOfPoints(allNodes.size());
@@ -138,6 +149,46 @@ void icy::Mesh::RegenerateVisualizedGeometry()
 
 }
 
+
+void icy::Mesh::UpdateTree(float distance_threshold)
+{
+    // update leafs
+    unsigned nLeafs = global_leafs_ccd.size();
+#pragma omp parallel for
+    for(unsigned i=0;i<nLeafs;i++)
+    {
+        BVHN *leaf_ccd = global_leafs_ccd[i];
+        Node *nd1 = allNodes[leaf_ccd->feature.first];
+        Node *nd2 = allNodes[leaf_ccd->feature.second];
+        kDOP8 &box_ccd = leaf_ccd->box;
+        box_ccd.Reset();
+        box_ccd.Expand(nd1->xn.x(), nd1->xn.y());
+        box_ccd.Expand(nd2->xn.x(), nd2->xn.y());
+        box_ccd.Expand(nd1->xt.x(), nd1->xt.y());
+        box_ccd.Expand(nd2->xt.x(), nd2->xt.y());
+
+        BVHN *leaf_contact = global_leafs_contact[i];
+        nd1 = allNodes[leaf_contact->feature.first];
+        nd2 = allNodes[leaf_contact->feature.second];
+
+        kDOP8 &box_contact = leaf_contact->box;
+        box_contact.Reset();
+        box_contact.Expand(nd1->xt.x(), nd1->xt.y());
+        box_contact.Expand(nd2->xt.x(), nd2->xt.y());
+        box_contact.ExpandBy(distance_threshold);
+    }
+
+    // update or build the rest of the tree
+    if(tree_update_counter%10 != 0)
+    {
+        root.Update();
+    }
+    else
+    {
+        BVHN::BVHNFactory.releaseAll();
+        // TODO: finish this part of the algorithm
+    }
+}
 
 
 

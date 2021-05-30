@@ -2,14 +2,17 @@
 #define MESHFRAGMENT_H
 
 #include "element.h"
+#include "bvh/ConcurrentPool.h"
+#include "bvh/bvhn.h"
 #include <vector>
 
 namespace icy { class MeshFragment; }
 
 class icy::MeshFragment
-{
-public:
+{    
+    // TODO: destructor to allow removal of the fragments (release BVHNs)
 
+public:
     bool deformable;
     std::vector<icy::Node> nodes;
     std::vector<icy::Element> elems;
@@ -25,6 +28,16 @@ public:
 
 private:
     void GetFromGmsh();
+
+// BROAD PHASE
+
+public:
+    BVHN root;
+    std::vector<BVHN*> leafs_for_ccd, leafs_for_contact;
+private:
+    void GenerateLeafs();
+    static ConcurrentPool<BVHN> BVHNLeafFactory;
+
 
 };
 

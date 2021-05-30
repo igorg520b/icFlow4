@@ -15,15 +15,15 @@ public:
 
     kDOP8 box;
     bool isLeaf;
+    bool test_self_collision;   // can disable self-collision tests on fragments
     int level;
-    unsigned featureIdx; // if leaf, refers to the feature that is enveloped by this kDOP
+    std::pair<unsigned,unsigned> feature; // if leaf, refers to the feature that is enveloped by this kDOP
 
     BVHN();
     void Initialize(std::vector<BVHN*> *bvs, int level_);
     void Update();
-    void UpdateLeaf();  // use tentative coordinates from elem
-    void SelfCollide(std::vector<unsigned> &broad_list);
-    void Collide(BVHN *b, std::vector<unsigned> &broad_list);
+    void SelfCollide(std::vector<std::pair<unsigned,unsigned>> &broad_list);
+    void Collide(BVHN *b, std::vector<std::pair<unsigned,unsigned>> &broad_list);
 
 private:
     BVHN *child1, *child2;
