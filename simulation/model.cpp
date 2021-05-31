@@ -22,8 +22,8 @@ void icy::Model::Reset(SimParams &prms)
 
 void icy::Model::Prepare(void)
 {
-    abortRequested = false;
-    timeStepFactor = 1;
+//    abortRequested = false;
+//    timeStepFactor = 1;
 }
 
 bool icy::Model::Step(void)
@@ -90,7 +90,6 @@ void icy::Model::RequestAbort(void)
     abortRequested = true;
 }
 
-
 void icy::Model::Aborting()
 {
     //perform any cleanup if step was aborted
@@ -113,10 +112,9 @@ void icy::Model::ChangeVisualizationOption(icy::Model::VisOpt option)
     vtk_update_mutex.unlock();
 }
 
-
 void icy::Model::PositionIndenter(double offset)
 {
-//    vtk_update_mutex.lock();
+    vtk_update_mutex.lock();
     unsigned n = mesh->indenter.nodes.size();
     Eigen::Vector2d y_direction = Eigen::Vector2d(0,-1.0);
     for(unsigned i=0;i<n;i++)
@@ -124,7 +122,7 @@ void icy::Model::PositionIndenter(double offset)
         icy::Node &nd = mesh->indenter.nodes[i];
         nd.intended_position = nd.x_initial + offset*y_direction;
     }
-//    vtk_update_mutex.unlock();
+    vtk_update_mutex.unlock();
 }
 
 
@@ -171,6 +169,7 @@ bool icy::Model::AssembleAndSolve(SimParams &prms, double timeStep)
 #pragma omp parallel for
     for(unsigned i=0;i<nElems;i++) mesh->allElems[i]->AddToSparsityStructure(eqOfMotion);
 
+    mesh->UpdateTree(prms.InteractionDistance);
     vtk_update_mutex.lock();
     mesh->DetectContactPairs(prms.InteractionDistance);
     vtk_update_mutex.unlock();

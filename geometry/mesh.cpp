@@ -69,8 +69,8 @@ icy::Mesh::Mesh()
     collision_interactions.reserve(10000);
     broadphase_list.reserve(100000);
 
-    root.isLeaf = false;
-    root.test_self_collision = true;
+    root_contact.isLeaf = root_ccd.isLeaf = false;
+    root_contact.test_self_collision = root_ccd.test_self_collision = true;
 }
 
 
@@ -95,7 +95,8 @@ void icy::Mesh::RegenerateVisualizedGeometry()
 
     global_leafs_ccd.clear();
     global_leafs_contact.clear();
-    fragmentRoots.clear();
+    fragmentRoots_ccd.clear();
+    fragmentRoots_contact.clear();
 
     for(MeshFragment *mf : allMeshes)
     {
@@ -107,12 +108,14 @@ void icy::Mesh::RegenerateVisualizedGeometry()
             else nd->eqId=freeNodeCount++;
             allNodes.push_back(nd);
         }
+        mf->GenerateLeafs();
 
         for(unsigned i=0;i<mf->elems.size();i++) allElems.push_back(&mf->elems[i]);
         allBoundaryEdges.insert(allBoundaryEdges.end(), mf->boundary_edges.begin(), mf->boundary_edges.end());
         global_leafs_ccd.insert(global_leafs_ccd.end(), mf->leafs_for_ccd.begin(), mf->leafs_for_ccd.end());
         global_leafs_contact.insert(global_leafs_contact.end(),mf->leafs_for_contact.begin(), mf->leafs_for_contact.end());
-        fragmentRoots.push_back(&mf->root);
+        fragmentRoots_ccd.push_back(&mf->root_ccd);
+        fragmentRoots_contact.push_back(&mf->root_contact);
     }
 
     points_deformable->SetNumberOfPoints(allNodes.size());
@@ -152,14 +155,16 @@ void icy::Mesh::RegenerateVisualizedGeometry()
 
 void icy::Mesh::UpdateTree(float distance_threshold)
 {
+    qDebug() << "icy::Mesh::UpdateTree " << distance_threshold;
     // update leafs
     unsigned nLeafs = global_leafs_ccd.size();
 #pragma omp parallel for
     for(unsigned i=0;i<nLeafs;i++)
     {
         BVHN *leaf_ccd = global_leafs_ccd[i];
-        Node *nd1 = allNodes[leaf_ccd->feature.first];
-        Node *nd2 = allNodes[leaf_ccd->feature.second];
+        auto [nd1Idx,nd2Idx] = leaf_ccd->feature;
+        Node *nd1 = allNodes[nd1Idx];
+        Node *nd2 = allNodes[nd2Idx];
         kDOP8 &box_ccd = leaf_ccd->box;
         box_ccd.Reset();
         box_ccd.Expand(nd1->xn.x(), nd1->xn.y());
@@ -178,16 +183,30 @@ void icy::Mesh::UpdateTree(float distance_threshold)
         box_contact.ExpandBy(distance_threshold);
     }
 
+    qDebug() << "leafs updated " << nLeafs;
+
     // update or build the rest of the tree
+    // TODO: parallel
     if(tree_update_counter%10 != 0)
     {
-        root.Update();
+        qDebug() << "updating tree " << tree_update_counter%10;
+        root_ccd.Update();
+        root_contact.Update();
     }
     else
     {
-        BVHN::BVHNFactory.releaseAll();
-        // TODO: finish this part of the algorithm
+        qDebug() << "building tree";
+        BVHN::BVHNFactory.releaseAll(); // does not release root nodes of mesh fragments
+        for(MeshFragment *mf : allMeshes)
+        {
+            mf->root_ccd.Build(&mf->leafs_for_ccd,0);
+            mf->root_contact.Build(&mf->leafs_for_contact,0);
+        }
+        root_ccd.Build(&fragmentRoots_ccd,0);
+        root_contact.Build(&fragmentRoots_contact,0);
     }
+    tree_update_counter++;
+    qDebug() << "icy::Mesh::UpdateTree " << tree_update_counter;
 }
 
 
@@ -312,9 +331,6 @@ void icy::Mesh::DetectContactPairs(double distance_threshold)
         AddToNarrowListIfNeeded(nd3, nd4, nd1, distance_threshold);
         AddToNarrowListIfNeeded(nd3, nd4, nd2, distance_threshold);
     }
-
-
-
 }
 
 void icy::Mesh::UpdateValues()

@@ -20,7 +20,7 @@ public:
     std::pair<unsigned,unsigned> feature; // if leaf, refers to the feature that is enveloped by this kDOP
 
     BVHN();
-    void Initialize(std::vector<BVHN*> *bvs, int level_);
+    void Build(std::vector<BVHN*> *bvs, int level_);
     void Update();
     void SelfCollide(std::vector<std::pair<unsigned,unsigned>> &broad_list);
     void Collide(BVHN *b, std::vector<std::pair<unsigned,unsigned>> &broad_list);

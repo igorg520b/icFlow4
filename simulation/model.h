@@ -24,9 +24,9 @@ class icy::Model : public QObject, public ModelControllerInterface
 
     // ModelController
 public:
-    void Prepare(void) override;
-    bool Step(void) override;
-    void RequestAbort(void) override;
+    void Prepare(void) override;        // invoked once, at simulation start
+    bool Step(void) override;           // either invoked by Worker or via GUI
+    void RequestAbort(void) override;   // invoked from GUI
 private:
     bool abortRequested = false;
     void Aborting();       // called before exiting Step() if aborted

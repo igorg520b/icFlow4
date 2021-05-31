@@ -1,8 +1,10 @@
 #include "kdop8.h"
 #include <cfloat>
+#include <iostream>
 
 void icy::kDOP8::Reset()
 {
+
     d[0] = d[1] = d[2] = d[3] = DBL_MAX;
     g[0] = g[1] = g[2] = g[3] = -DBL_MAX;
 }

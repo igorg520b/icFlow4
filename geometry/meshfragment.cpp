@@ -172,6 +172,11 @@ void icy::MeshFragment::GetFromGmsh()
 
 void icy::MeshFragment::GenerateLeafs()
 {
+    root_ccd.isLeaf = false;
+    root_ccd.test_self_collision = false;
+    root_contact.isLeaf = false;
+    root_contact.test_self_collision = false;
+
     leafs_for_ccd.clear();
     leafs_for_contact.clear();
     leafs_for_ccd.reserve(boundary_edges.size());
@@ -186,13 +191,14 @@ void icy::MeshFragment::GenerateLeafs()
 
         leaf_contact->feature = leaf_ccd->feature = std::make_pair(nd1->globId, nd2->globId);
         leaf_contact->test_self_collision = leaf_ccd->test_self_collision = false;
+        leaf_contact->isLeaf = leaf_ccd->isLeaf = true;
 
         leafs_for_ccd.push_back(leaf_ccd);
         leafs_for_contact.push_back(leaf_contact);
 
 
     }
-
+    qDebug() << "icy::MeshFragment::GenerateLeafs() " << leafs_for_ccd.size() << " " << leafs_for_contact.size();
 }
 
 

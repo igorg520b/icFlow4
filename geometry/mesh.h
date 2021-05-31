@@ -57,8 +57,8 @@ public:
     void DetectContactPairs(double distance_threshold);
 
 private:
-    BVHN root;
-    std::vector<BVHN*> global_leafs_ccd, global_leafs_contact, fragmentRoots;
+    BVHN root_ccd, root_contact;
+    std::vector<BVHN*> global_leafs_ccd, global_leafs_contact, fragmentRoots_ccd, fragmentRoots_contact;
     std::vector<std::pair<unsigned,unsigned>> broadphase_list; // indices of potentially colliding edges
     void AddToNarrowListIfNeeded(Node *A, Node *B, Node *P, double distance_threshold);
     void UpdateTree(float distance_threshold);

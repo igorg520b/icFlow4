@@ -32,10 +32,10 @@ private:
 // BROAD PHASE
 
 public:
-    BVHN root;
+    BVHN root_ccd, root_contact;
     std::vector<BVHN*> leafs_for_ccd, leafs_for_contact;
-private:
     void GenerateLeafs();
+private:
     static ConcurrentPool<BVHN> BVHNLeafFactory;
 
 

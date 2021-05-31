@@ -8,8 +8,10 @@ icy::ConcurrentPool<icy::BVHN> icy::BVHN::BVHNFactory(50000);
 
 icy::BVHN::BVHN() {}
 
-void icy::BVHN::Initialize(std::vector<BVHN*> *bvs, int level_)
+void icy::BVHN::Build(std::vector<BVHN*> *bvs, int level_)
 {
+    // TODO: ensure that the algorithm will also work with just one element in bvs
+
     if(level_ > 100) throw std::runtime_error("BVH level is over 100");
     level = level_;
     auto count = bvs->size();
@@ -96,7 +98,7 @@ void icy::BVHN::Initialize(std::vector<BVHN*> *bvs, int level_)
     {
         child1 = BVHNFactory.take();
         child1->test_self_collision = this->test_self_collision;
-        child1->Initialize(left, level+1);
+        child1->Build(left, level+1);
     }
     else throw std::runtime_error("left.size < 1");
     VectorFactory.release(left);
@@ -111,7 +113,7 @@ void icy::BVHN::Initialize(std::vector<BVHN*> *bvs, int level_)
     {
         child2 = BVHNFactory.take();
         child2->test_self_collision = this->test_self_collision;
-        child2->Initialize(right, level+1);
+        child2->Build(right, level+1);
     }
     else throw std::runtime_error("right.size < 1");
     VectorFactory.release(right);
