@@ -195,8 +195,6 @@ void icy::MeshFragment::GenerateLeafs()
 
         leafs_for_ccd.push_back(leaf_ccd);
         leafs_for_contact.push_back(leaf_contact);
-
-
     }
     qDebug() << "icy::MeshFragment::GenerateLeafs() " << leafs_for_ccd.size() << " " << leafs_for_contact.size();
 }

@@ -6,11 +6,16 @@
 
 
 
-
-
 icy::Mesh::Mesh()
 {
-    InitializeLUT(2);
+    // initialize LUT
+    const int nLut = 51;
+    hueLut->SetNumberOfTableValues(nLut);
+    for ( int i=0; i<nLut; i++)
+            hueLut->SetTableValue(i, (double)lutArrayTemperatureAdj[i][0],
+                    (double)lutArrayTemperatureAdj[i][1],
+                    (double)lutArrayTemperatureAdj[i][2], 1.0);
+
     visualized_values->SetName("visualized_values");
 
     ugrid_deformable->SetPoints(points_deformable);
@@ -67,7 +72,8 @@ icy::Mesh::Mesh()
     actor_collisions->GetProperty()->SetLineWidth(1);
 
     collision_interactions.reserve(10000);
-    broadphase_list.reserve(100000);
+    broadlist_ccd.reserve(100000);
+    broadlist_contact.reserve(100000);
 
     root_contact.isLeaf = root_ccd.isLeaf = false;
     root_contact.test_self_collision = root_ccd.test_self_collision = true;
@@ -155,16 +161,14 @@ void icy::Mesh::RegenerateVisualizedGeometry()
 
 void icy::Mesh::UpdateTree(float distance_threshold)
 {
-    qDebug() << "icy::Mesh::UpdateTree " << distance_threshold;
     // update leafs
     unsigned nLeafs = global_leafs_ccd.size();
 #pragma omp parallel for
     for(unsigned i=0;i<nLeafs;i++)
     {
         BVHN *leaf_ccd = global_leafs_ccd[i];
-        auto [nd1Idx,nd2Idx] = leaf_ccd->feature;
-        Node *nd1 = allNodes[nd1Idx];
-        Node *nd2 = allNodes[nd2Idx];
+        Node *nd1 = allNodes[leaf_ccd->feature.first];
+        Node *nd2 = allNodes[leaf_ccd->feature.second];
         kDOP8 &box_ccd = leaf_ccd->box;
         box_ccd.Reset();
         box_ccd.Expand(nd1->xn.x(), nd1->xn.y());
@@ -183,20 +187,16 @@ void icy::Mesh::UpdateTree(float distance_threshold)
         box_contact.ExpandBy(distance_threshold);
     }
 
-    qDebug() << "leafs updated " << nLeafs;
-
     // update or build the rest of the tree
     // TODO: parallel
     if(tree_update_counter%10 != 0)
     {
-        qDebug() << "updating tree " << tree_update_counter%10;
         root_ccd.Update();
         root_contact.Update();
     }
     else
     {
-        qDebug() << "building tree";
-        BVHN::BVHNFactory.releaseAll(); // does not release root nodes of mesh fragments
+        BVHN::BVHNFactory.releaseAll(); // does not release the leaves and roots
         for(MeshFragment *mf : allMeshes)
         {
             mf->root_ccd.Build(&mf->leafs_for_ccd,0);
@@ -206,39 +206,7 @@ void icy::Mesh::UpdateTree(float distance_threshold)
         root_contact.Build(&fragmentRoots_contact,0);
     }
     tree_update_counter++;
-    qDebug() << "icy::Mesh::UpdateTree " << tree_update_counter;
 }
-
-
-
-
-
-
-void icy::Mesh::ChangeVisualizationOption(int option)
-{
-    qDebug() << "icy::Model::ChangeVisualizationOption " << option;
-    if(VisualizingVariable == option) return; // option did not change
-    VisualizingVariable = option;
-
-    if(VisualizingVariable == (int)icy::Model::VisOpt::none)
-    {
-        dataSetMapper_deformable->ScalarVisibilityOff();
-        ugrid_deformable->GetPointData()->RemoveArray("visualized_values");
-        ugrid_deformable->GetCellData()->RemoveArray("visualized_values");
-        return;
-    }
-    else
-    {
-        ugrid_deformable->GetPointData()->RemoveArray("visualized_values");
-        ugrid_deformable->GetCellData()->AddArray(visualized_values);
-        ugrid_deformable->GetCellData()->SetActiveScalars("visualized_values");
-        dataSetMapper_deformable->SetScalarModeToUseCellData();
-        dataSetMapper_deformable->ScalarVisibilityOn();
-    }
-    UpdateValues();
-}
-
-
 
 
 
@@ -271,8 +239,6 @@ void icy::Mesh::UnsafeUpdateGeometry()
     ugrid_collisions->SetCells(VTK_LINE, cellArray_collisions);
     actor_collisions->Modified();
 
-
-
 /*
     glyph_int_data->SetNumberOfValues(mesh.nodes.size());
 
@@ -289,48 +255,32 @@ void icy::Mesh::UnsafeUpdateGeometry()
     poly_data->GetPointData()->AddArray(glyph_int_data);
     poly_data->GetPointData()->SetActiveScalars("glyph_int_data");
 */
-
-}
-
-void icy::Mesh::AddToNarrowListIfNeeded(Node *ndA, Node *ndB, Node *ndP, double distance_threshold)
-{
-    Eigen::Vector2d D;
-    double dist = icy::Interaction::SegmentPointDistance(ndA->xt, ndB->xt, ndP->xt, D);
-    if(dist < distance_threshold)
-    {
-        Interaction i;
-        i.ndA = ndA;
-        i.ndB = ndB;
-        i.ndP = ndP;
-        i.D = D;
-        collision_interactions.push_back(i);
-    }
 }
 
 
-void icy::Mesh::DetectContactPairs(double distance_threshold)
+
+void icy::Mesh::ChangeVisualizationOption(int option)
 {
-    unsigned nEdges = allBoundaryEdges.size();
-    broadphase_list.clear();
-    for(unsigned idx1=0;idx1<nEdges;idx1++)
-        for(unsigned idx2=0;idx2<idx1;idx2++)
-            broadphase_list.push_back(std::make_pair(idx1,idx2));
+    qDebug() << "icy::Model::ChangeVisualizationOption " << option;
+    if(VisualizingVariable == option) return; // option did not change
+    VisualizingVariable = option;
 
-    unsigned nBroadList = broadphase_list.size();
-
-    collision_interactions.clear();
-#pragma omp parallel for
-    for(unsigned i=0;i<nBroadList;i++)
+    if(VisualizingVariable == (int)icy::Model::VisOpt::none)
     {
-        auto [idx1,idx2] = broadphase_list[i];
-        auto [nd1, nd2] = allBoundaryEdges[idx1];
-        auto [nd3, nd4] = allBoundaryEdges[idx2];
-
-        AddToNarrowListIfNeeded(nd1, nd2, nd3, distance_threshold);
-        AddToNarrowListIfNeeded(nd1, nd2, nd4, distance_threshold);
-        AddToNarrowListIfNeeded(nd3, nd4, nd1, distance_threshold);
-        AddToNarrowListIfNeeded(nd3, nd4, nd2, distance_threshold);
+        dataSetMapper_deformable->ScalarVisibilityOff();
+        ugrid_deformable->GetPointData()->RemoveArray("visualized_values");
+        ugrid_deformable->GetCellData()->RemoveArray("visualized_values");
+        return;
     }
+    else
+    {
+        ugrid_deformable->GetPointData()->RemoveArray("visualized_values");
+        ugrid_deformable->GetCellData()->AddArray(visualized_values);
+        ugrid_deformable->GetCellData()->SetActiveScalars("visualized_values");
+        dataSetMapper_deformable->SetScalarModeToUseCellData();
+        dataSetMapper_deformable->ScalarVisibilityOn();
+    }
+    UpdateValues();
 }
 
 void icy::Mesh::UpdateValues()
@@ -417,19 +367,52 @@ void icy::Mesh::UpdateValues()
     }
 }
 
-void icy::Mesh::InitializeLUT(int table)
-{
-    const int n = 51;
-    hueLut->SetNumberOfTableValues(n);
 
-    if(table==1)
-    for ( int i=0; i<n; i++)
-            hueLut->SetTableValue(i, (double)lutArrayTerrain[i][0],
-                    (double)lutArrayTerrain[i][1],
-                    (double)lutArrayTerrain[i][2], 1.0);
-    else if(table==2)
-        for ( int i=0; i<n; i++)
-                hueLut->SetTableValue(i, (double)lutArrayTemperatureAdj[i][0],
-                        (double)lutArrayTemperatureAdj[i][1],
-                        (double)lutArrayTemperatureAdj[i][2], 1.0);
+
+void icy::Mesh::AddToNarrowListIfNeeded(Node *ndA, Node *ndB, Node *ndP, double distance_threshold)
+{
+    Eigen::Vector2d D;
+    double dist = icy::Interaction::SegmentPointDistance(ndA->xt, ndB->xt, ndP->xt, D);
+    if(dist < distance_threshold)
+    {
+        Interaction i;
+        i.ndA = ndA;
+        i.ndB = ndB;
+        i.ndP = ndP;
+        i.D = D;
+        collision_interactions.push_back(i);
+    }
 }
+
+void icy::Mesh::DetectContactPairs(double distance_threshold)
+{
+    broadlist_ccd.clear();
+    broadlist_contact.clear();
+
+    root_ccd.SelfCollide(broadlist_ccd);
+    root_contact.SelfCollide(broadlist_contact);
+
+    unsigned nBroadListContact = broadlist_contact.size();
+//    if(nBroadListContact%2 ==1) throw std::runtime_error("nBroadListContact%2 ==1");
+//    qDebug() << "broadlist_contact.size()/2 = " << broadlist_contact.size()/2;
+
+    collision_interactions.clear();
+#pragma omp parallel for
+    for(unsigned i=0;i<nBroadListContact/2;i++)
+    {
+        auto [idx1,idx2] = broadlist_contact[i*2];
+        auto [idx3,idx4] = broadlist_contact[i*2+1];
+        Node *nd1 = allNodes[idx1];
+        Node *nd2 = allNodes[idx2];
+        Node *nd3 = allNodes[idx3];
+        Node *nd4 = allNodes[idx4];
+
+        AddToNarrowListIfNeeded(nd1, nd2, nd3, distance_threshold);
+        AddToNarrowListIfNeeded(nd1, nd2, nd4, distance_threshold);
+        AddToNarrowListIfNeeded(nd3, nd4, nd1, distance_threshold);
+        AddToNarrowListIfNeeded(nd3, nd4, nd2, distance_threshold);
+    }
+}
+
+
+
