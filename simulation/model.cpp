@@ -126,16 +126,6 @@ void icy::Model::PositionIndenter(double offset)
 }
 
 
-
-
-
-
-
-
-
-
-
-
 void icy::Model::InitialGuess(SimParams &prms, double timeStep, double timeStepFactor)
 {
     std::size_t nNodes = mesh->allNodes.size();
@@ -175,12 +165,12 @@ bool icy::Model::AssembleAndSolve(SimParams &prms, double timeStep)
     vtk_update_mutex.unlock();
     unsigned nInteractions = mesh->collision_interactions.size();
 
-/*
 #pragma omp parallel for
     for(unsigned i=0;i<nInteractions;i++)
         mesh->collision_interactions[i].AddToSparsityStructure(eqOfMotion);
-*/
+
     eqOfMotion.CreateStructure();
+
 
     // assemble
     bool mesh_iversion_detected = false;
@@ -195,24 +185,10 @@ bool icy::Model::AssembleAndSolve(SimParams &prms, double timeStep)
 
 #pragma omp parallel for
     for(unsigned i=0;i<nNodes;i++) mesh->allNodes[i]->ComputeEquationEntries(eqOfMotion, prms, timeStep);
-/*
-#pragma omp parallel for
-    for(unsigned i=0;i<nInteractions;i++)
-        mesh->collision_interactions[i].Evaluate(eqOfMotion, prms, timeStep);
 
-    if(nInteractions==0)
-    {
-        avgSeparationDistance=-1;
-    }
-    else
-    {
-        double distTotal = 0;
-#pragma omp parallel for reduction(+:distTotal)
-        for(unsigned i=0;i<nInteractions;i++)
-            distTotal+=mesh->collision_interactions[i].dist;
-        avgSeparationDistance = distTotal/nInteractions;
-    }
-*/
+#pragma omp parallel for
+    for(unsigned i=0;i<nInteractions;i++) mesh->collision_interactions[i].Evaluate(eqOfMotion, prms, timeStep);
+
     // solve
     bool result = eqOfMotion.Solve();
 

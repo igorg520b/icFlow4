@@ -87,7 +87,7 @@ public:
 
         PoissonsRatio = 0.3;
         YoungsModulus = 50;
-        InteractionDistance = 0.1;
+        InteractionDistance = 0.05;
 
         CharacteristicLength = 0.05;
         ConvergenceEpsilon = 1e-2;

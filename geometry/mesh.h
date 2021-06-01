@@ -6,6 +6,7 @@
 
 #include <vector>
 #include <tbb/concurrent_vector.h>
+#include <tbb/concurrent_unordered_set.h>
 
 #include "meshfragment.h"
 #include "element.h"
@@ -59,9 +60,10 @@ public:
 private:
     BVHN root_ccd, root_contact;
     std::vector<BVHN*> global_leafs_ccd, global_leafs_contact, fragmentRoots_ccd, fragmentRoots_contact;
-    std::vector<std::pair<unsigned,unsigned>> broadlist_ccd, broadlist_contact; // indices of potentially colliding edges
+    std::vector<unsigned> broadlist_ccd, broadlist_contact; // indices of potentially colliding edges
+    tbb::concurrent_unordered_set<long long> narrow_list_contact, narrow_list_ccd;
 
-    void AddToNarrowListIfNeeded(Node *A, Node *B, Node *P, double distance_threshold);
+    void AddToNarrowListIfNeeded(unsigned edge_idx, unsigned node_idx, double distance_threshold);
     void UpdateTree(float distance_threshold);
     void BuildTree(float distance_threshold);
     unsigned tree_update_counter = 0;

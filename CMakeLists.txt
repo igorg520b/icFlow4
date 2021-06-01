@@ -109,10 +109,10 @@ target_include_directories(fl4 PUBLIC gui/interactor)
 # some paths need to be set manually
 target_include_directories(fl4 PUBLIC /home/s2/Projects-libraries/eigen)
 target_include_directories(fl4 PUBLIC /home/s2/Projects-libraries/vtk/Common/Core/)
-target_include_directories(fl4 PUBLIC /home/s2/Projects-libraries/gmsh-4.8.4-source/api)
+#target_include_directories(fl4 PUBLIC /home/s2/Projects-libraries/gmsh-4.8.4-source/api)
 
 target_link_directories(fl4 PUBLIC /usr/local/lib)
-target_link_directories(fl4 PUBLIC /home/s2/Projects-libraries/gmsh-build)
+#target_link_directories(fl4 PUBLIC /home/s2/Projects-libraries/gmsh-build)
 
 target_link_libraries(fl4 PRIVATE Qt5::Widgets Qt5::Charts Qt5::Core)
 target_link_libraries(fl4 PRIVATE ${VTK_LIBRARIES})

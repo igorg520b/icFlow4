@@ -34,7 +34,7 @@ private:
 public:
     BVHN root_ccd, root_contact;
     std::vector<BVHN*> leafs_for_ccd, leafs_for_contact;
-    void GenerateLeafs();
+    void GenerateLeafs(unsigned edge_idx);
 private:
     static ConcurrentPool<BVHN> BVHNLeafFactory;
 

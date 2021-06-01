@@ -170,7 +170,7 @@ void icy::MeshFragment::GetFromGmsh()
     gmsh::clear();
 }
 
-void icy::MeshFragment::GenerateLeafs()
+void icy::MeshFragment::GenerateLeafs(unsigned edge_idx)
 {
     root_ccd.isLeaf = false;
     root_ccd.test_self_collision = false;
@@ -189,7 +189,7 @@ void icy::MeshFragment::GenerateLeafs()
         BVHN *leaf_ccd = BVHNLeafFactory.take();
         BVHN *leaf_contact = BVHNLeafFactory.take();
 
-        leaf_contact->feature = leaf_ccd->feature = std::make_pair(nd1->globId, nd2->globId);
+        leaf_contact->feature_idx = leaf_ccd->feature_idx = edge_idx++;
         leaf_contact->test_self_collision = leaf_ccd->test_self_collision = false;
         leaf_contact->isLeaf = leaf_ccd->isLeaf = true;
 

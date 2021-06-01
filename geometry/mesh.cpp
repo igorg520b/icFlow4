@@ -114,7 +114,7 @@ void icy::Mesh::RegenerateVisualizedGeometry()
             else nd->eqId=freeNodeCount++;
             allNodes.push_back(nd);
         }
-        mf->GenerateLeafs();
+        mf->GenerateLeafs(allBoundaryEdges.size());
 
         for(unsigned i=0;i<mf->elems.size();i++) allElems.push_back(&mf->elems[i]);
         allBoundaryEdges.insert(allBoundaryEdges.end(), mf->boundary_edges.begin(), mf->boundary_edges.end());
@@ -167,8 +167,8 @@ void icy::Mesh::UpdateTree(float distance_threshold)
     for(unsigned i=0;i<nLeafs;i++)
     {
         BVHN *leaf_ccd = global_leafs_ccd[i];
-        Node *nd1 = allNodes[leaf_ccd->feature.first];
-        Node *nd2 = allNodes[leaf_ccd->feature.second];
+        Node *nd1, *nd2;
+        std::tie(nd1,nd2) = allBoundaryEdges[leaf_ccd->feature_idx];
         kDOP8 &box_ccd = leaf_ccd->box;
         box_ccd.Reset();
         box_ccd.Expand(nd1->xn.x(), nd1->xn.y());
@@ -177,8 +177,7 @@ void icy::Mesh::UpdateTree(float distance_threshold)
         box_ccd.Expand(nd2->xt.x(), nd2->xt.y());
 
         BVHN *leaf_contact = global_leafs_contact[i];
-        nd1 = allNodes[leaf_contact->feature.first];
-        nd2 = allNodes[leaf_contact->feature.second];
+        std::tie(nd1,nd2) = allBoundaryEdges[leaf_contact->feature_idx];
 
         kDOP8 &box_contact = leaf_contact->box;
         box_contact.Reset();
@@ -213,12 +212,23 @@ void icy::Mesh::UpdateTree(float distance_threshold)
 
 void icy::Mesh::UnsafeUpdateGeometry()
 {
-    for(icy::Node *nd : allNodes) points_deformable->SetPoint((vtkIdType)nd->globId, nd->xn.data());
+    double x[3]={};
+
+    for(icy::Node *nd : allNodes)
+    {
+        x[0] = nd->xn[0];
+        x[1] = nd->xn[1];
+        points_deformable->SetPoint((vtkIdType)nd->globId, x);
+    }
     points_deformable->Modified();
 
     // indenter intended points
     for(icy::Node &nd : indenter.nodes)
-        points_indenter_intended->SetPoint((vtkIdType)nd.locId, nd.intended_position.data());
+    {
+        x[0]=nd.intended_position[0];
+        x[1]=nd.intended_position[1];
+        points_indenter_intended->SetPoint((vtkIdType)nd.locId, x);
+    }
     points_indenter_intended->Modified();
 
     if(VisualizingVariable != icy::Model::VisOpt::none) UpdateValues();
@@ -232,8 +242,12 @@ void icy::Mesh::UnsafeUpdateGeometry()
         vtkIdType pts[2] = {2*i, 2*i+1};
         cellArray_collisions->InsertNextCell(2, pts);
         Interaction &intr = collision_interactions[i];
-        points_collisions->SetPoint((vtkIdType)2*i, intr.ndP->xt.data());
-        points_collisions->SetPoint((vtkIdType)2*i+1, intr.D.data());
+        x[0] = intr.ndP->xt[0];
+        x[1] = intr.ndP->xt[1];
+        points_collisions->SetPoint((vtkIdType)2*i, x);
+        x[0] = intr.D[0];
+        x[1] = intr.D[1];
+        points_collisions->SetPoint((vtkIdType)2*i+1, x);
     }
     points_indenter_intended->Modified();
     ugrid_collisions->SetCells(VTK_LINE, cellArray_collisions);
@@ -369,18 +383,26 @@ void icy::Mesh::UpdateValues()
 
 
 
-void icy::Mesh::AddToNarrowListIfNeeded(Node *ndA, Node *ndB, Node *ndP, double distance_threshold)
+void icy::Mesh::AddToNarrowListIfNeeded(unsigned edge_idx, unsigned node_idx, double distance_threshold)
 {
+    Node *ndA, *ndB, *ndP;
+    std::tie(ndA,ndB) = allBoundaryEdges[edge_idx];
+    ndP = allNodes[node_idx];
     Eigen::Vector2d D;
     double dist = icy::Interaction::SegmentPointDistance(ndA->xt, ndB->xt, ndP->xt, D);
     if(dist < distance_threshold)
     {
-        Interaction i;
-        i.ndA = ndA;
-        i.ndB = ndB;
-        i.ndP = ndP;
-        i.D = D;
-        collision_interactions.push_back(i);
+        auto result = narrow_list_contact.insert((long long) edge_idx << 32 | node_idx);
+        bool inserted = result.second;
+        if(inserted)
+        {
+            Interaction i;
+            i.ndA = ndA;
+            i.ndB = ndB;
+            i.ndP = ndP;
+            i.D = D;
+            collision_interactions.push_back(i);
+        }
     }
 }
 
@@ -396,22 +418,28 @@ void icy::Mesh::DetectContactPairs(double distance_threshold)
 //    if(nBroadListContact%2 ==1) throw std::runtime_error("nBroadListContact%2 ==1");
 //    qDebug() << "broadlist_contact.size()/2 = " << broadlist_contact.size()/2;
 
+    narrow_list_ccd.clear();
+    narrow_list_contact.clear();
     collision_interactions.clear();
+
 #pragma omp parallel for
     for(unsigned i=0;i<nBroadListContact/2;i++)
     {
-        auto [idx1,idx2] = broadlist_contact[i*2];
-        auto [idx3,idx4] = broadlist_contact[i*2+1];
-        Node *nd1 = allNodes[idx1];
-        Node *nd2 = allNodes[idx2];
-        Node *nd3 = allNodes[idx3];
-        Node *nd4 = allNodes[idx4];
 
-        AddToNarrowListIfNeeded(nd1, nd2, nd3, distance_threshold);
-        AddToNarrowListIfNeeded(nd1, nd2, nd4, distance_threshold);
-        AddToNarrowListIfNeeded(nd3, nd4, nd1, distance_threshold);
-        AddToNarrowListIfNeeded(nd3, nd4, nd2, distance_threshold);
+        unsigned edge1_idx = broadlist_contact[i*2];
+        unsigned edge2_idx = broadlist_contact[i*2+1];
+        Node *nd1, *nd2, *nd3, *nd4;
+        std::tie(nd1,nd2) = allBoundaryEdges[edge1_idx];
+        std::tie(nd3,nd4) = allBoundaryEdges[edge2_idx];
+
+        AddToNarrowListIfNeeded(edge1_idx, nd3->globId, distance_threshold);
+        AddToNarrowListIfNeeded(edge1_idx, nd4->globId, distance_threshold);
+        AddToNarrowListIfNeeded(edge2_idx, nd1->globId, distance_threshold);
+        AddToNarrowListIfNeeded(edge2_idx, nd2->globId, distance_threshold);
     }
+
+//        unsigned edge_idx = (unsigned)(contact_entry >> 32);
+//        int node_idx = (unsigned)(contact_entry & 0xffffffff);
 }
 
 

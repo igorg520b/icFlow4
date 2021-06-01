@@ -130,7 +130,7 @@ void icy::BVHN::Update()
     box.Expand(child2->box);
 }
 
-void icy::BVHN::SelfCollide(std::vector<std::pair<unsigned,unsigned>> &broad_list)
+void icy::BVHN::SelfCollide(std::vector<unsigned> &broad_list)
 {
     if (isLeaf) return;
     if(child1->test_self_collision) child1->SelfCollide(broad_list);
@@ -138,20 +138,13 @@ void icy::BVHN::SelfCollide(std::vector<std::pair<unsigned,unsigned>> &broad_lis
     child1->Collide(child2, broad_list);
 }
 
-void icy::BVHN::Collide(BVHN *b, std::vector<std::pair<unsigned,unsigned>> &broad_list)
+void icy::BVHN::Collide(BVHN *b, std::vector<unsigned> &broad_list)
 {
     if(!box.Overlaps(b->box)) return;
     if (this->isLeaf && b->isLeaf)
     {
-        // ensure that the edges are not adjacent
-        if(feature.first != b->feature.first &&
-                feature.first != b->feature.second &&
-                feature.second != b->feature.first &&
-                feature.second != b->feature.second)
-        {
-            broad_list.push_back(feature);
-            broad_list.push_back(b->feature);
-        }
+        broad_list.push_back(feature_idx);
+        broad_list.push_back(b->feature_idx);
     }
     else if (this->isLeaf)
     {
