@@ -48,7 +48,7 @@ public:
     ~Model();
     void Reset(SimParams &prms);
     void InitialGuess(SimParams &prms, double timeStep, double timeStepFactor);
-    bool AssembleAndSolve(SimParams &prms, double timeStep);    // return what solver returns
+    std::pair<bool,double> AssembleAndSolve(SimParams &prms, double timeStep);    // true if solved; false -> parameter is time step mult
     void AcceptTentativeValues(double timeStep);
     void UnsafeUpdateGeometry();
     void PositionIndenter(double offset);

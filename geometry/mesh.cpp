@@ -393,7 +393,7 @@ void icy::Mesh::AddToNarrowListIfNeeded(unsigned edge_idx, unsigned node_idx, do
     //        int node_idx = (unsigned)(contact_entry & 0xffffffff);
 }
 
-void icy::Mesh::DetectContactPairs(double distance_threshold)
+std::pair<bool, double> icy::Mesh::DetectContactPairs(double distance_threshold)
 {
     broadlist_ccd.clear();
     broadlist_contact.clear();
@@ -427,9 +427,9 @@ void icy::Mesh::DetectContactPairs(double distance_threshold)
     // CCD
     ccd_results.clear();
     unsigned nBroadListCCD = broadlist_ccd.size();
-    qDebug() << "nBroadListCCD/2 " << nBroadListCCD/2;
+//    qDebug() << "nBroadListCCD/2 " << nBroadListCCD/2;
 
-#pragma omp parallel for
+//#pragma omp parallel for
     for(unsigned i=0;i<nBroadListCCD/2;i++)
     {
         unsigned edge1_idx = broadlist_ccd[i*2];
@@ -453,10 +453,14 @@ void icy::Mesh::DetectContactPairs(double distance_threshold)
     if(ccd_results.size() > 0)
     {
         // find the smallest t; Model will discard the step
+        auto iter = std::min_element(ccd_results.begin(), ccd_results.end());
+        qDebug() << "ccd_results.size " << ccd_results.size() << "; min " << *iter;
+        return std::make_pair(true, *iter);
     }
     else
     {
         // proceed without intersections
+        return std::make_pair(false, 0);
     }
 }
 
@@ -511,43 +515,55 @@ std::pair<bool, double> icy::Mesh::CCD(unsigned edge_idx, unsigned node_idx)
            (2.*(-(ptx*v1ty) + px*v1ty + ptx*v1y - px*v1y + v1ty*v2tx - v1y*v2tx + ptx*v2ty - px*v2ty - v1tx*v2ty + v1x*v2ty +
                 py*(-v1tx + v1x + v2tx - v2x) - v1ty*v2x + v1y*v2x + pty*(v1tx - v1x - v2tx + v2x) - ptx*v2y + px*v2y + v1tx*v2y - v1x*v2y));
 
-        t=t1;
-        if(t>=0 && t<=1)
+        bool result = false;
+        double result_s;
+        if(t1>0 && t1<1)
         {
-            double denom_x = -v1x + t*(-v1tx + v1x + v2tx - v2x) + v2x;
+            double denom_x = -v1x + t1*(-v1tx + v1x + v2tx - v2x) + v2x;
             if(denom_x != 0)
             {
-                double s = (px*(-1 + t) - ptx*t + t*v2tx + v2x - t*v2x)/denom_x;
-                if(s>=0 && s<=1) return std::make_pair(true,t);
+                double s = (px*(-1 + t1) - ptx*t1 + t1*v2tx + v2x - t1*v2x)/denom_x;
+                if(s>=0 && s<=1) { result = true; t=t1; result_s = s; }
             }
             else
             {
-                double denom_y = -v1y + t*(-v1ty + v1y + v2ty - v2y) + v2y;
+                double denom_y = -v1y + t1*(-v1ty + v1y + v2ty - v2y) + v2y;
                 if(denom_y != 0)
                 {
-                    double s = (py*(-1 + t) - pty*t + t*v2ty + v2y - t*v2y)/denom_y;
-                    if(s>=0 && s<=1) return std::make_pair(true,t);
+                    double s = (py*(-1 + t1) - pty*t1 + t1*v2ty + v2y - t1*v2y)/denom_y;
+                    if(s>=0 && s<=1) { result = true; t=t1; result_s=s;}
                 }
             }
         }
-        t=t2;
-        if(t>=0 && t<=1)
+
+        if(!result && t2>0 && t2<1)
         {
-            double denom_x = -v1x + t*(-v1tx + v1x + v2tx - v2x) + v2x;
+            double denom_x = -v1x + t2*(-v1tx + v1x + v2tx - v2x) + v2x;
             if(denom_x != 0)
             {
-                double s = (px*(-1 + t) - ptx*t + t*v2tx + v2x - t*v2x)/denom_x;
-                if(s>=0 && s<=1) return std::make_pair(true,t);
+                double s = (px*(-1 + t2) - ptx*t2 + t2*v2tx + v2x - t2*v2x)/denom_x;
+                if(s>=0 && s<=1) {result = true; t=t2;result_s=s;}
             }
             else
             {
-                double denom_y = -v1y + t*(-v1ty + v1y + v2ty - v2y) + v2y;
+                double denom_y = -v1y + t2*(-v1ty + v1y + v2ty - v2y) + v2y;
                 if(denom_y != 0)
                 {
-                    double s = (py*(-1 + t) - pty*t + t*v2ty + v2y - t*v2y)/denom_y;
-                    if(s>=0 && s<=1) return std::make_pair(true,t);
+                    double s = (py*(-1 + t2) - pty*t2 + t2*v2ty + v2y - t2*v2y)/denom_y;
+                    if(s>=0 && s<=1) {result = true; t=t2;result_s=s;}
                 }
             }
+        }
+        if(result)
+        {
+            if(t<1e-5)
+            {
+                qDebug() << "A("<<v1x<<","<<v1y<<")-("<<v1tx<<","<<v1ty<<")";
+                qDebug() << "B("<<v2x<<","<<v2y<<")-("<<v2tx<<","<<v2ty<<")";
+                qDebug() << "P("<<px<<","<<py<<")-("<<ptx<<","<<pty<<")";
+                qDebug() << "t " << t << "; s " << result_s;
+            }
+            return std::make_pair(true,t);
         }
     }
 

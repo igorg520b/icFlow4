@@ -55,7 +55,7 @@ private:
     // Collision detection
 public:
     tbb::concurrent_vector<Interaction> collision_interactions;
-    void DetectContactPairs(double distance_threshold);
+    std::pair<bool, double> DetectContactPairs(double distance_threshold);
 
 private:
     BVHN root_ccd, root_contact;
