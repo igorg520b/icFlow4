@@ -253,22 +253,7 @@ void icy::Mesh::UnsafeUpdateGeometry()
     ugrid_collisions->SetCells(VTK_LINE, cellArray_collisions);
     actor_collisions->Modified();
 
-/*
-    glyph_int_data->SetNumberOfValues(mesh.nodes.size());
 
-    for(std::size_t i=0;i<mesh.nodes.size();i++)
-    {
-        int value = 0;
-        if(mesh.nodes[i].pinned)
-            value = mesh.nodes[i].selected ? 2 : 1;
-        glyph_int_data->SetValue(i,value);
-    }
-    glyph_hueLut->SetTableRange(-0.5,5.5);
-
-    glyph_mapper->SetScalarModeToUsePointData();
-    poly_data->GetPointData()->AddArray(glyph_int_data);
-    poly_data->GetPointData()->SetActiveScalars("glyph_int_data");
-*/
 }
 
 
@@ -404,6 +389,8 @@ void icy::Mesh::AddToNarrowListIfNeeded(unsigned edge_idx, unsigned node_idx, do
             collision_interactions.push_back(i);
         }
     }
+    //        unsigned edge_idx = (unsigned)(contact_entry >> 32);
+    //        int node_idx = (unsigned)(contact_entry & 0xffffffff);
 }
 
 void icy::Mesh::DetectContactPairs(double distance_threshold)
@@ -425,7 +412,6 @@ void icy::Mesh::DetectContactPairs(double distance_threshold)
 #pragma omp parallel for
     for(unsigned i=0;i<nBroadListContact/2;i++)
     {
-
         unsigned edge1_idx = broadlist_contact[i*2];
         unsigned edge2_idx = broadlist_contact[i*2+1];
         Node *nd1, *nd2, *nd3, *nd4;
@@ -438,9 +424,151 @@ void icy::Mesh::DetectContactPairs(double distance_threshold)
         AddToNarrowListIfNeeded(edge2_idx, nd2->globId, distance_threshold);
     }
 
-//        unsigned edge_idx = (unsigned)(contact_entry >> 32);
-//        int node_idx = (unsigned)(contact_entry & 0xffffffff);
+    // CCD
+    ccd_results.clear();
+    unsigned nBroadListCCD = broadlist_ccd.size();
+    qDebug() << "nBroadListCCD/2 " << nBroadListCCD/2;
+
+#pragma omp parallel for
+    for(unsigned i=0;i<nBroadListCCD/2;i++)
+    {
+        unsigned edge1_idx = broadlist_ccd[i*2];
+        unsigned edge2_idx = broadlist_ccd[i*2+1];
+        Node *nd1, *nd2, *nd3, *nd4;
+        std::tie(nd1,nd2) = allBoundaryEdges[edge1_idx];
+        std::tie(nd3,nd4) = allBoundaryEdges[edge2_idx];
+
+        bool result;
+        double t;
+        std::tie(result, t) = CCD(edge1_idx, nd3->globId);
+        if(result) ccd_results.push_back(t);
+        std::tie(result, t) = CCD(edge1_idx, nd4->globId);
+        if(result) ccd_results.push_back(t);
+        std::tie(result, t) = CCD(edge2_idx, nd1->globId);
+        if(result) ccd_results.push_back(t);
+        std::tie(result, t) = CCD(edge2_idx, nd2->globId);
+        if(result) ccd_results.push_back(t);
+    }
+
+    if(ccd_results.size() > 0)
+    {
+        // find the smallest t; Model will discard the step
+    }
+    else
+    {
+        // proceed without intersections
+    }
 }
 
+std::pair<bool, double> icy::Mesh::CCD(unsigned edge_idx, unsigned node_idx)
+{
+    Node *ndA, *ndB, *ndP;
+    std::tie(ndA,ndB) = allBoundaryEdges[edge_idx];
+    ndP = allNodes[node_idx];
 
+    double t;
+    double px,py,ptx,pty;
+    double v1x,v1y,v2x,v2y,v1tx,v1ty,v2tx,v2ty;
+
+    px=ndP->xn.x();
+    ptx=ndP->xt.x();
+    py=ndP->xn.y();
+    pty=ndP->xt.y();
+
+    v1x=ndA->xn.x();
+    v1tx=ndA->xt.x();
+    v1y=ndA->xn.y();
+    v1ty=ndA->xt.y();
+
+    v2x=ndB->xn.x();
+    v2tx=ndB->xt.x();
+    v2y=ndB->xn.y();
+    v2ty=ndB->xt.y();
+
+    double t1, t2;
+
+    double expr0t = pty*v1x - ptx*v1y + v1y*v2tx - v1x*v2ty - pty*v2x + v1ty*v2x - 2*v1y*v2x + py*(v1tx - 2*v1x - v2tx + 2*v2x) +
+            px*(-v1ty + 2*v1y + v2ty - 2*v2y) + ptx*v2y - v1tx*v2y + 2*v1x*v2y;
+
+    double expr1t= expr0t*expr0t -
+            4*(-(ptx*v1ty) + px*v1ty + ptx*v1y - px*v1y + v1ty*v2tx - v1y*v2tx + ptx*v2ty - px*v2ty - v1tx*v2ty + v1x*v2ty +
+               py*(-v1tx + v1x + v2tx - v2x) - v1ty*v2x + v1y*v2x + pty*(v1tx - v1x - v2tx + v2x) - ptx*v2y + px*v2y + v1tx*v2y -
+               v1x*v2y)*(py*(v1x - v2x) + v1y*v2x - v1x*v2y + px*(-v1y + v2y));
+
+    if(expr1t>=0)
+    {
+        double sqrt1t = sqrt(expr1t);
+
+        t1=(py*v1tx - px*v1ty + pty*v1x - 2*py*v1x - ptx*v1y + 2*px*v1y - py*v2tx + v1y*v2tx + px*v2ty - v1x*v2ty - pty*v2x + 2*py*v2x +
+                   v1ty*v2x - 2*v1y*v2x + ptx*v2y - 2*px*v2y - v1tx*v2y + 2*v1x*v2y +
+                   sqrt1t)/
+                (2.*(ptx*v1ty - px*v1ty - ptx*v1y + px*v1y - v1ty*v2tx + v1y*v2tx - ptx*v2ty + px*v2ty + v1tx*v2ty - v1x*v2ty +
+                     pty*(-v1tx + v1x + v2tx - v2x) + v1ty*v2x - v1y*v2x + py*(v1tx - v1x - v2tx + v2x) + ptx*v2y - px*v2y - v1tx*v2y + v1x*v2y));
+
+        t2 = (-(py*v1tx) + px*v1ty - pty*v1x + 2*py*v1x + ptx*v1y - 2*px*v1y + py*v2tx - v1y*v2tx - px*v2ty + v1x*v2ty + pty*v2x - 2*py*v2x -
+              v1ty*v2x + 2*v1y*v2x - ptx*v2y + 2*px*v2y + v1tx*v2y - 2*v1x*v2y +
+              sqrt1t)/
+           (2.*(-(ptx*v1ty) + px*v1ty + ptx*v1y - px*v1y + v1ty*v2tx - v1y*v2tx + ptx*v2ty - px*v2ty - v1tx*v2ty + v1x*v2ty +
+                py*(-v1tx + v1x + v2tx - v2x) - v1ty*v2x + v1y*v2x + pty*(v1tx - v1x - v2tx + v2x) - ptx*v2y + px*v2y + v1tx*v2y - v1x*v2y));
+
+        t=t1;
+        if(t>=0 && t<=1)
+        {
+            double denom_x = -v1x + t*(-v1tx + v1x + v2tx - v2x) + v2x;
+            if(denom_x != 0)
+            {
+                double s = (px*(-1 + t) - ptx*t + t*v2tx + v2x - t*v2x)/denom_x;
+                if(s>=0 && s<=1) return std::make_pair(true,t);
+            }
+            else
+            {
+                double denom_y = -v1y + t*(-v1ty + v1y + v2ty - v2y) + v2y;
+                if(denom_y != 0)
+                {
+                    double s = (py*(-1 + t) - pty*t + t*v2ty + v2y - t*v2y)/denom_y;
+                    if(s>=0 && s<=1) return std::make_pair(true,t);
+                }
+            }
+        }
+        t=t2;
+        if(t>=0 && t<=1)
+        {
+            double denom_x = -v1x + t*(-v1tx + v1x + v2tx - v2x) + v2x;
+            if(denom_x != 0)
+            {
+                double s = (px*(-1 + t) - ptx*t + t*v2tx + v2x - t*v2x)/denom_x;
+                if(s>=0 && s<=1) return std::make_pair(true,t);
+            }
+            else
+            {
+                double denom_y = -v1y + t*(-v1ty + v1y + v2ty - v2y) + v2y;
+                if(denom_y != 0)
+                {
+                    double s = (py*(-1 + t) - pty*t + t*v2ty + v2y - t*v2y)/denom_y;
+                    if(s>=0 && s<=1) return std::make_pair(true,t);
+                }
+            }
+        }
+    }
+
+    // qDebug() << "CCD: false";
+    return std::make_pair(false,0);
+}
+
+/*
+    glyph_int_data->SetNumberOfValues(mesh.nodes.size());
+
+    for(std::size_t i=0;i<mesh.nodes.size();i++)
+    {
+        int value = 0;
+        if(mesh.nodes[i].pinned)
+            value = mesh.nodes[i].selected ? 2 : 1;
+        glyph_int_data->SetValue(i,value);
+    }
+    glyph_hueLut->SetTableRange(-0.5,5.5);
+
+    glyph_mapper->SetScalarModeToUsePointData();
+    poly_data->GetPointData()->AddArray(glyph_int_data);
+    poly_data->GetPointData()->SetActiveScalars("glyph_int_data");
+*/
 

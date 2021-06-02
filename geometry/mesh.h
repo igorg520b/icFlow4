@@ -62,8 +62,10 @@ private:
     std::vector<BVHN*> global_leafs_ccd, global_leafs_contact, fragmentRoots_ccd, fragmentRoots_contact;
     std::vector<unsigned> broadlist_ccd, broadlist_contact; // indices of potentially colliding edges
     tbb::concurrent_unordered_set<long long> narrow_list_contact, narrow_list_ccd;
+    tbb::concurrent_vector<double> ccd_results; // if not empty, time step is multiplied by the minimal value on the list
 
     void AddToNarrowListIfNeeded(unsigned edge_idx, unsigned node_idx, double distance_threshold);
+    std::pair<bool, double> CCD(unsigned edge_idx, unsigned node_idx);  // if intersects, return [true, time]
     void UpdateTree(float distance_threshold);
     void BuildTree(float distance_threshold);
     unsigned tree_update_counter = 0;
