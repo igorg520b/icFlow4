@@ -76,23 +76,29 @@ void icy::MeshFragment::GenerateCup(double ElementSize)
 
     double width = 2;
     double height = 1;
+    int point0 = gmsh::model::occ::addPoint(-width/2, height*10, 0, 1.0);
     int point1 = gmsh::model::occ::addPoint(-width/2, height, 0, 1.0);
     int point2 = gmsh::model::occ::addPoint(-width/20, 0, 0, 1.0);
     int point3 = gmsh::model::occ::addPoint(width/20, 0, 0, 1.0);
     int point4 = gmsh::model::occ::addPoint(width/2, height, 0, 1.0);
+    int point5 = gmsh::model::occ::addPoint(width/2, height*10, 0, 1.0);
 
+    int line0 = gmsh::model::occ::addLine(point0, point1);
     int line1 = gmsh::model::occ::addLine(point1, point2);
     int line2 = gmsh::model::occ::addLine(point2, point3);
     int line3 = gmsh::model::occ::addLine(point3, point4);
+    int line4 = gmsh::model::occ::addLine(point4, point5);
 
     std::vector<int> curveTags;
+    curveTags.push_back(line0);
     curveTags.push_back(line1);
     curveTags.push_back(line2);
     curveTags.push_back(line3);
+    curveTags.push_back(line4);
     gmsh::model::occ::addWire(curveTags);
 
     gmsh::model::occ::synchronize();
-    gmsh::option::setNumber("Mesh.CharacteristicLengthMax", ElementSize);
+    gmsh::option::setNumber("Mesh.CharacteristicLengthMax", ElementSize*10);
 
     GetFromGmsh();
 }

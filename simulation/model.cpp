@@ -30,42 +30,49 @@ bool icy::Model::Step(void)
 {
     int iter, attempt = 0;
     bool converges=false;
-    bool res; // false if matrix is not PSD
-    std::pair<bool, double> solve_result;
+    bool sln_res, ccd_res; // false if matrix is not PSD
     double h;
     do
     {
+        iter = 0;
         h = prms.InitialTimeStep*timeStepFactor; // time step
         InitialGuess(prms, h, timeStepFactor);
-        iter = 0;
+        std::pair<bool, double> ccd_result = mesh->EnsureNoIntersectionViaCCD();
+        ccd_res = ccd_result.first;
+        std::cout << std::scientific << std::setprecision(1);
+        std::cout << "\nSTEP: " << currentStep << "-" << attempt << std::endl;
+        sln_res=true;
 
-        do
+        while(ccd_res && sln_res && iter < prms.MaxIter && (iter < prms.MinIter || !converges))
         {
             if(abortRequested) {Aborting(); return false;}
-            solve_result = AssembleAndSolve(prms, h);
-            res = solve_result.first;
+            sln_res = AssembleAndSolve(prms, h);
+            ccd_result = mesh->EnsureNoIntersectionViaCCD();
+            ccd_res = ccd_result.first;
 
             double ratio = iter == 0 ? 0 : eqOfMotion.solution_norm/eqOfMotion.solution_norm_prev;
             converges = (eqOfMotion.solution_norm < prms.ConvergenceCutoff || ratio < prms.ConvergenceEpsilon);
 
-            std::cout << std::scientific << std::setprecision(1);
-            std::cout << (currentStep%2 ? ". " : "  ");
-            std::cout << attempt << "-";
-            std::cout << std::setw(4) <<std::right<< currentStep;
-            std::cout << "-"<< std::left << std::setw(2) << iter;
+            std::cout << "IT "<< std::left << std::setw(2) << iter;
             std::cout << " obj " << std::setw(10) << eqOfMotion.objective_value;
             std::cout << " sln " << std::setw(10) << eqOfMotion.solution_norm;
             if(iter) std::cout << " ra " << std::setw(10) << ratio;
             else std::cout << "tsf " << std::setw(20) << timeStepFactor;
             std::cout << std::endl;
             iter++;
-        } while(res && iter < prms.MaxIter && (iter < prms.MinIter || !converges));
+        }
 
-        if(!res)
+        if(!ccd_res)
+        {
+            qDebug() << "intersection detected";
+            attempt++;
+            timeStepFactor*=(ccd_result.second*0.8);
+        }
+        else if(!sln_res)
         {
             qDebug() << "could not solve";
             attempt++;
-            timeStepFactor*=solve_result.second;
+            timeStepFactor*=0.5;
         }
         else if(!converges)
         {
@@ -74,13 +81,12 @@ bool icy::Model::Step(void)
             timeStepFactor*=0.5;
         }
         if(attempt > 20) throw std::runtime_error("could not solve");
-    } while (!res || !converges);
+    } while (!ccd_res || !sln_res || !converges);
 
     if(timeStepFactor < 1) timeStepFactor *= 1.2;
     if(timeStepFactor > 1) timeStepFactor=1;
     // accept step
     AcceptTentativeValues(h);
-    std::cout << std::endl;
     currentStep++;
 
     emit stepCompleted();
@@ -145,13 +151,13 @@ void icy::Model::InitialGuess(SimParams &prms, double timeStep, double timeStepF
         {
             nd->x_hat = nd->xn + timeStep*nd->vn;
             nd->x_hat.y() -= prms.Gravity*timeStep*timeStep;
-            nd->xt = nd->xn;
+            nd->xt = nd->xn + timeStep*nd->vn;
         }
     }
 }
 
 
-std::pair<bool,double> icy::Model::AssembleAndSolve(SimParams &prms, double timeStep)
+bool icy::Model::AssembleAndSolve(SimParams &prms, double timeStep)
 {
     eqOfMotion.ClearAndResize(mesh->freeNodeCount);
 
@@ -163,16 +169,9 @@ std::pair<bool,double> icy::Model::AssembleAndSolve(SimParams &prms, double time
 
     mesh->UpdateTree(prms.InteractionDistance);
     vtk_update_mutex.lock();
-    bool intersection_detected;
-    double intersection_time;
-    std::tie(intersection_detected, intersection_time) = mesh->DetectContactPairs(prms.InteractionDistance);
+    mesh->DetectContactPairs(prms.InteractionDistance);
     vtk_update_mutex.unlock();
 
-    if(intersection_detected)
-    {
-        qDebug() << "CCD at " << intersection_time;
-        return std::make_pair(false, intersection_time*0.75);
-    }
     unsigned nInteractions = mesh->collision_interactions.size();
 
 #pragma omp parallel for
@@ -191,7 +190,7 @@ std::pair<bool,double> icy::Model::AssembleAndSolve(SimParams &prms, double time
         if(!elem_entry_ok) mesh_iversion_detected = true;
     }
 
-    if(mesh_iversion_detected) return std::make_pair(false, 0.5); // mesh inversion
+    if(mesh_iversion_detected) return false; // mesh inversion
 
 #pragma omp parallel for
     for(unsigned i=0;i<nNodes;i++) mesh->allNodes[i]->ComputeEquationEntries(eqOfMotion, prms, timeStep);
@@ -201,7 +200,7 @@ std::pair<bool,double> icy::Model::AssembleAndSolve(SimParams &prms, double time
 
     // solve
     bool solve_result = eqOfMotion.Solve();
-    if(!solve_result) return std::make_pair(false, 0.5);
+    if(!solve_result) return false;
 
     // pull
 #pragma omp parallel for
@@ -215,7 +214,7 @@ std::pair<bool,double> icy::Model::AssembleAndSolve(SimParams &prms, double time
             nd->xt+=delta_x;
         }
     }
-    return std::make_pair(true, 1);
+    return true;
 }
 
 void icy::Model::AcceptTentativeValues(double timeStep)

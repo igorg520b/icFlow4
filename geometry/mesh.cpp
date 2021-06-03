@@ -419,19 +419,14 @@ void icy::Mesh::AddToNarrowListIfNeeded(unsigned edge_idx, unsigned node_idx, do
     //        int node_idx = (unsigned)(contact_entry & 0xffffffff);
 }
 
-std::pair<bool, double> icy::Mesh::DetectContactPairs(double distance_threshold)
+void icy::Mesh::DetectContactPairs(double distance_threshold)
 {
-    broadlist_ccd.clear();
     broadlist_contact.clear();
 
-    root_ccd.SelfCollide(broadlist_ccd);
     root_contact.SelfCollide(broadlist_contact);
 
     unsigned nBroadListContact = broadlist_contact.size();
-//    if(nBroadListContact%2 ==1) throw std::runtime_error("nBroadListContact%2 ==1");
-//    qDebug() << "broadlist_contact.size()/2 = " << broadlist_contact.size()/2;
 
-    narrow_list_ccd.clear();
     narrow_list_contact.clear();
     collision_interactions.clear();
 
@@ -450,12 +445,21 @@ std::pair<bool, double> icy::Mesh::DetectContactPairs(double distance_threshold)
         AddToNarrowListIfNeeded(edge2_idx, nd2->globId, distance_threshold);
     }
 
+
+}
+
+std::pair<bool, double> icy::Mesh::EnsureNoIntersectionViaCCD()
+{
+    broadlist_ccd.clear();
+    root_ccd.SelfCollide(broadlist_ccd);
+
     // CCD
     ccd_results.clear();
+
     unsigned nBroadListCCD = broadlist_ccd.size();
 //    qDebug() << "nBroadListCCD/2 " << nBroadListCCD/2;
 
-//#pragma omp parallel for
+#pragma omp parallel for
     for(unsigned i=0;i<nBroadListCCD/2;i++)
     {
         unsigned edge1_idx = broadlist_ccd[i*2];
@@ -481,14 +485,15 @@ std::pair<bool, double> icy::Mesh::DetectContactPairs(double distance_threshold)
         // find the smallest t; Model will discard the step
         auto iter = std::min_element(ccd_results.begin(), ccd_results.end());
         qDebug() << "ccd_results.size " << ccd_results.size() << "; min " << *iter;
-        return std::make_pair(true, *iter);
+        return std::make_pair(false, *iter);
     }
     else
     {
         // proceed without intersections
-        return std::make_pair(false, 0);
+        return std::make_pair(true, 0);
     }
 }
+
 
 std::pair<bool, double> icy::Mesh::CCD(unsigned edge_idx, unsigned node_idx)
 {

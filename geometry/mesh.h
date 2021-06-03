@@ -55,13 +55,14 @@ private:
     // Collision detection
 public:
     tbb::concurrent_vector<Interaction> collision_interactions;
-    std::pair<bool, double> DetectContactPairs(double distance_threshold);
+    void DetectContactPairs(double distance_threshold);
+    std::pair<bool, double> EnsureNoIntersectionViaCCD();
 
 private:
     BVHN root_ccd, root_contact;
     std::vector<BVHN*> global_leafs_ccd, global_leafs_contact, fragmentRoots_ccd, fragmentRoots_contact;
     std::vector<unsigned> broadlist_ccd, broadlist_contact; // indices of potentially colliding edges
-    tbb::concurrent_unordered_set<long long> narrow_list_contact, narrow_list_ccd;
+    tbb::concurrent_unordered_set<long long> narrow_list_contact;
     tbb::concurrent_vector<double> ccd_results; // if not empty, time step is multiplied by the minimal value on the list
 
     void AddToNarrowListIfNeeded(unsigned edge_idx, unsigned node_idx, double distance_threshold);
