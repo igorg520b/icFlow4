@@ -32,6 +32,8 @@
 #include <vtkCellArray.h>
 #include <vtkCellData.h>
 
+#include "Mathematics/IntrSegment2Segment2.h"
+
 namespace icy { class Mesh; class Model; }
 
 class icy::Mesh
@@ -67,9 +69,12 @@ private:
 
     void AddToNarrowListIfNeeded(unsigned edge_idx, unsigned node_idx, double distance_threshold);
     std::pair<bool, double> CCD(unsigned edge_idx, unsigned node_idx);  // if intersects, return [true, time]
+    bool EdgeIntersection(unsigned edgeIdx1, unsigned edgeIdx2); // true if edges intersect
     void UpdateTree(float distance_threshold);
     void BuildTree(float distance_threshold);
     unsigned tree_update_counter = 0;
+
+    gte::TIQuery<double, gte::Segment2<double>, gte::Segment2<double>> mTIQuery;
 
     // VTK
 public:

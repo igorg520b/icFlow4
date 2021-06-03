@@ -22,7 +22,7 @@ void icy::Model::Reset(SimParams &prms)
 
 void icy::Model::Prepare(void)
 {
-//    abortRequested = false;
+    abortRequested = false;
 //    timeStepFactor = 1;
 }
 
@@ -40,7 +40,7 @@ bool icy::Model::Step(void)
         std::pair<bool, double> ccd_result = mesh->EnsureNoIntersectionViaCCD();
         ccd_res = ccd_result.first;
         std::cout << std::scientific << std::setprecision(1);
-        std::cout << "\nSTEP: " << currentStep << "-" << attempt << std::endl;
+        std::cout << "\nSTEP: " << currentStep << "-" << attempt << " TCF " << timeStepFactor << std::endl;
         sln_res=true;
 
         while(ccd_res && sln_res && iter < prms.MaxIter && (iter < prms.MinIter || !converges))

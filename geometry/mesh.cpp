@@ -459,11 +459,15 @@ std::pair<bool, double> icy::Mesh::EnsureNoIntersectionViaCCD()
     unsigned nBroadListCCD = broadlist_ccd.size();
 //    qDebug() << "nBroadListCCD/2 " << nBroadListCCD/2;
 
+    bool final_state_contains_edge_intersection = false;
+
 #pragma omp parallel for
     for(unsigned i=0;i<nBroadListCCD/2;i++)
     {
         unsigned edge1_idx = broadlist_ccd[i*2];
         unsigned edge2_idx = broadlist_ccd[i*2+1];
+        if(EdgeIntersection(edge1_idx, edge2_idx)==true) final_state_contains_edge_intersection = true;
+
         Node *nd1, *nd2, *nd3, *nd4;
         std::tie(nd1,nd2) = allBoundaryEdges[edge1_idx];
         std::tie(nd3,nd4) = allBoundaryEdges[edge2_idx];
@@ -487,11 +491,34 @@ std::pair<bool, double> icy::Mesh::EnsureNoIntersectionViaCCD()
         qDebug() << "ccd_results.size " << ccd_results.size() << "; min " << *iter;
         return std::make_pair(false, *iter);
     }
+    else if(final_state_contains_edge_intersection)
+    {
+        return std::make_pair(false, 0.5);
+    }
     else
     {
         // proceed without intersections
         return std::make_pair(true, 0);
     }
+}
+
+
+bool icy::Mesh::EdgeIntersection(unsigned edgeIdx1, unsigned edgeIdx2)
+{
+    Node *ndA, *ndB, *ndC, *ndD;
+    std::tie(ndA,ndB) = allBoundaryEdges[edgeIdx1];
+    std::tie(ndC,ndD) = allBoundaryEdges[edgeIdx2];
+
+    gte::Segment2<double> seg1;
+    seg1.p[0] = {ndA->xt.x(), ndA->xt.y()};
+    seg1.p[1] = {ndB->xt.x(), ndB->xt.y()};
+
+    gte::Segment2<double> seg2;
+    seg2.p[0] = {ndC->xt.x(), ndC->xt.y()};
+    seg2.p[1] = {ndD->xt.x(), ndD->xt.y()};
+
+    bool result = mTIQuery(seg1, seg2).intersect;
+    return result;
 }
 
 
