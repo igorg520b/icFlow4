@@ -22,9 +22,9 @@ public:
 
     void GenerateBrick(double ElementSize);
     void GenerateIndenter(double ElementSize);
-//    void GenerateCup(double ElementSize);
+    void GenerateCup(double ElementSize);
+    void GenerateBall(double x, double y, double r1, double r2, double ElementSize);
 //    void GenerateSelfCollisionTest(double ElementSize);
-//    void GenerateCircle(double x, double y, double r, double ElementSize);
 
 private:
     void GetFromGmsh();

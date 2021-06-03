@@ -57,7 +57,7 @@ void icy::MeshFragment::GenerateIndenter(double ElementSize)
     double radius = 0.15;
 //    int point1 = gmsh::model::occ::addPoint(0, height+radius*1.1, 0, 1.0);
 
-    int ellipseTag = gmsh::model::occ::addEllipse(0, height+radius*1.1, 0, radius, radius/2);
+    gmsh::model::occ::addEllipse(0, height+radius*1.1, 0, radius, radius/2);
     gmsh::model::occ::synchronize();
 
     gmsh::option::setNumber("Mesh.CharacteristicLengthMax", ElementSize);
@@ -65,6 +65,55 @@ void icy::MeshFragment::GenerateIndenter(double ElementSize)
     GetFromGmsh();
 }
 
+void icy::MeshFragment::GenerateCup(double ElementSize)
+{
+    deformable = false;
+
+    // invoke Gmsh
+    gmsh::clear();
+    gmsh::option::setNumber("General.Terminal", 1);
+    gmsh::model::add("block1");
+
+    double width = 2;
+    double height = 1;
+    int point1 = gmsh::model::occ::addPoint(-width/2, height, 0, 1.0);
+    int point2 = gmsh::model::occ::addPoint(-width/20, 0, 0, 1.0);
+    int point3 = gmsh::model::occ::addPoint(width/20, 0, 0, 1.0);
+    int point4 = gmsh::model::occ::addPoint(width/2, height, 0, 1.0);
+
+    int line1 = gmsh::model::occ::addLine(point1, point2);
+    int line2 = gmsh::model::occ::addLine(point2, point3);
+    int line3 = gmsh::model::occ::addLine(point3, point4);
+
+    std::vector<int> curveTags;
+    curveTags.push_back(line1);
+    curveTags.push_back(line2);
+    curveTags.push_back(line3);
+    gmsh::model::occ::addWire(curveTags);
+
+    gmsh::model::occ::synchronize();
+    gmsh::option::setNumber("Mesh.CharacteristicLengthMax", ElementSize);
+
+    GetFromGmsh();
+}
+
+void icy::MeshFragment::GenerateBall(double x, double y, double r1, double r2, double ElementSize)
+{
+    deformable = true;
+
+    // invoke Gmsh
+    gmsh::clear();
+    gmsh::option::setNumber("General.Terminal", 1);
+    gmsh::model::add("block1");
+
+    int diskTag = gmsh::model::occ::addDisk(x, y, 0, r1, r2);
+    gmsh::vectorpair vp;
+    vp.push_back(std::make_pair(2,diskTag));
+    gmsh::model::occ::rotate(vp, x,y,0,0,0,1,M_PI/2);
+    gmsh::model::occ::synchronize();
+    gmsh::option::setNumber("Mesh.CharacteristicLengthMax", ElementSize);
+    GetFromGmsh();
+}
 
 
 void icy::MeshFragment::GetFromGmsh()

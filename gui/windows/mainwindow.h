@@ -108,6 +108,8 @@ private slots:
 
     void background_worker_paused();
 
+    void on_actionSetup_2_triggered();
+
 private:
 //    PreferencesGUI prefsGUI;
     icy::Model model;

@@ -249,3 +249,8 @@ void MainWindow::sliderValueChanged(int val)
 
 
 
+
+void MainWindow::on_actionSetup_2_triggered()
+{
+    // reset the mesh - select setup 2
+}

@@ -37,7 +37,7 @@ namespace icy { class Mesh; class Model; }
 class icy::Mesh
 {
 public:
-    MeshFragment brick, indenter;
+    MeshFragment indenter;
     std::vector<MeshFragment*> allMeshes;   // including the indenter
     std::vector<icy::Node*> allNodes;
     std::vector<icy::Element*> allElems;
