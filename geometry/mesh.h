@@ -49,6 +49,7 @@ public:
     Mesh();
     void Reset(double CharacteristicLengthMax);
 
+
 private:
     void UpdateValues();
     void UnsafeUpdateGeometry();

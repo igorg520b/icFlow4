@@ -19,12 +19,12 @@ public:
 //    icy::Edge edges[3];        // element's edges opposite to nd 0,1,2
     icy::Element* adj_elems[3]; // nullptr if no adjacent element
 
-    // at initial state
     double area_initial;
     void PrecomputeInitialArea();
 
     void AddToSparsityStructure(EquationOfMotionSolver &eq);
     bool ComputeEquationEntries(EquationOfMotionSolver &eq, SimParams &prms, double timeStep);
+    void EvaluateVelocityDivergence();
 
     double strain_energy_density;   // (not multiplied by volume!)
     Eigen::Matrix<double, 6, 1> DE;    // energy gradient
@@ -32,7 +32,7 @@ public:
 
     Eigen::Matrix2d CauchyStress;
     double principal_stress1, principal_stress2, max_shear_stress;
-    double volume_change;
+    double volume_change, velocity_divergence;
 
 private:
     void SpringModel(EquationOfMotionSolver &eq, SimParams &prms, double timeStep, Node *nd1, Node *nd2);

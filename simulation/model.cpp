@@ -214,6 +214,13 @@ bool icy::Model::AssembleAndSolve(SimParams &prms, double timeStep)
             nd->xt+=delta_x;
         }
     }
+
+    // for visualization
+    vtk_update_mutex.lock();
+#pragma omp parallel for
+    for(unsigned i=0;i<nElems;i++) mesh->allElems[i]->EvaluateVelocityDivergence();
+    vtk_update_mutex.unlock();
+
     return true;
 }
 

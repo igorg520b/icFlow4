@@ -83,11 +83,10 @@ icy::Mesh::Mesh()
 void icy::Mesh::Reset(double CharacteristicLengthMax)
 {
     allMeshes.clear();
-//    brick.GenerateBrick(CharacteristicLengthMax);
     indenter.GenerateIndenter(CharacteristicLengthMax);
     allMeshes.push_back(&indenter);
     MeshFragment *mf;
-
+/*
     for(int i=0;i<10;i++)
     {
         mf = new MeshFragment();
@@ -111,8 +110,10 @@ void icy::Mesh::Reset(double CharacteristicLengthMax)
     mf = new MeshFragment();
     mf->GenerateCup(CharacteristicLengthMax);
     allMeshes.push_back(mf);
-
-//    allMeshes.push_back(&brick);
+*/
+    MeshFragment *brick = new MeshFragment;
+    brick->GenerateBrick(CharacteristicLengthMax);
+    allMeshes.push_back(brick);
     RegenerateVisualizedGeometry();
     tree_update_counter=0;
 }
@@ -376,6 +377,11 @@ void icy::Mesh::UpdateValues()
         for(size_t i=0;i<allElems.size();i++) visualized_values->SetValue(i, allElems[i]->volume_change);
         break;
 
+    case icy::Model::VisOpt::velocity_div:
+        visualized_values->SetNumberOfValues(allElems.size());
+        for(size_t i=0;i<allElems.size();i++) visualized_values->SetValue(i, allElems[i]->velocity_divergence);
+        break;
+
     default:
         break;
     }
@@ -384,12 +390,22 @@ void icy::Mesh::UpdateValues()
 
     double minmax[2];
     visualized_values->GetValueRange(minmax);
-    hueLut->SetTableRange(minmax[0], minmax[1]);
     if(VisualizingVariable == icy::Model::VisOpt::volume_change)
     {
         double range = minmax[1]-minmax[0];
         hueLut->SetTableRange(1-range*0.75,1+range*0.75);
+    } else if(VisualizingVariable == icy::Model::VisOpt::velocity_div)
+    {
+        double upper_boundary = std::max(10.0, minmax[1]);
+        double lower_boundary = std::min(-10.0, minmax[0]);
+        double boundary = std::max(upper_boundary, std::abs(lower_boundary));
+        hueLut->SetTableRange(-boundary, boundary);
     }
+    else
+    {
+        hueLut->SetTableRange(minmax[0], minmax[1]);
+    }
+
 }
 
 
@@ -628,6 +644,9 @@ std::pair<bool, double> icy::Mesh::CCD(unsigned edge_idx, unsigned node_idx)
     // qDebug() << "CCD: false";
     return std::make_pair(false,0);
 }
+
+
+
 
 /*
     glyph_int_data->SetNumberOfValues(mesh.nodes.size());

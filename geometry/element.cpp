@@ -206,6 +206,36 @@ void icy::Element::SpringModel(EquationOfMotionSolver &eq, SimParams &prms, doub
     eq.AddToQ(nd2->eqId, nd1->eqId, Q12);
 }
 
+void icy::Element::EvaluateVelocityDivergence()
+{
+    // current positions of the verticies
+    double x1 = nds[0]->xn.x();
+    double x2 = nds[1]->xn.x();
+    double x3 = nds[2]->xn.x();
+    double y1 = nds[0]->xn.y();
+    double y2 = nds[1]->xn.y();
+    double y3 = nds[2]->xn.y();
+
+    double vx1 = nds[0]->vn.x();
+    double vx2 = nds[1]->vn.x();
+    double vx3 = nds[2]->vn.x();
+    double vy1 = nds[0]->vn.y();
+    double vy2 = nds[1]->vn.y();
+    double vy3 = nds[2]->vn.y();
+
+    Eigen::Matrix2d D, DinvT, DDot;
+
+    // deformed shape matrix
+    D << x2-x1, x3-x1, y2-y1, y3-y1;
+    DinvT = D.inverse().transpose();
+
+    // velocity matrix
+    DDot << vx2-vx1, vx3-vx1, vy2-vy1, vy3-vy1;
+
+
+    velocity_divergence = DinvT.cwiseProduct(DDot).sum();
+
+}
 
 
 
