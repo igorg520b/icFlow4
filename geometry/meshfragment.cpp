@@ -16,10 +16,10 @@ void icy::MeshFragment::GenerateBrick(double ElementSize)
 
     double width = 2;
     double height = 1;
-    int point1 = gmsh::model::occ::addPoint(-width/2, 0, 0, 1.0);
+    int point1 = gmsh::model::occ::addPoint(-width/2, 1e-10, 0, 1.0);
     int point2 = gmsh::model::occ::addPoint(-width/2, height, 0, 1.0);
-    int point3 = gmsh::model::occ::addPoint(width/2, height, 0, 1.0);
-    int point4 = gmsh::model::occ::addPoint(width/2, 0, 0, 1.0);
+    int point3 = gmsh::model::occ::addPoint(width/2, height*1.1, 0, 1.0);
+    int point4 = gmsh::model::occ::addPoint(width/2, 1e-10, 0, 1.0);
 
     int line1 = gmsh::model::occ::addLine(point1, point2);
     int line2 = gmsh::model::occ::addLine(point2, point3);
@@ -43,6 +43,37 @@ void icy::MeshFragment::GenerateBrick(double ElementSize)
     GetFromGmsh();
 }
 
+void icy::MeshFragment::GenerateContainer(double ElementSize, double offset)
+{
+    deformable = false;
+
+    gmsh::clear();
+    gmsh::option::setNumber("General.Terminal", 1);
+    gmsh::model::add("block1");
+
+    double width = 2;
+    double height = 1;
+    int point1 = gmsh::model::occ::addPoint(-width/2-offset, height*1.5, 0, 1.0);
+    int point2 = gmsh::model::occ::addPoint(-width/2-offset, -offset, 0, 1.0);
+    int point3 = gmsh::model::occ::addPoint(width/2+offset, -offset, 0, 1.0);
+    int point4 = gmsh::model::occ::addPoint(width/2+offset, height*1.5, 0, 1.0);
+
+    int line1 = gmsh::model::occ::addLine(point1, point2);
+    int line2 = gmsh::model::occ::addLine(point2, point3);
+    int line3 = gmsh::model::occ::addLine(point3, point4);
+
+    std::vector<int> curveTags;
+    curveTags.push_back(line1);
+    curveTags.push_back(line2);
+    curveTags.push_back(line3);
+    gmsh::model::occ::addWire(curveTags);
+
+    gmsh::model::occ::synchronize();
+
+    gmsh::option::setNumber("Mesh.CharacteristicLengthMax", ElementSize);
+
+    GetFromGmsh();
+}
 
 
 void icy::MeshFragment::GenerateIndenter(double ElementSize)

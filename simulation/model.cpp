@@ -16,7 +16,7 @@ icy::Model::~Model()
 
 void icy::Model::Reset(SimParams &prms)
 {
-    mesh->Reset(prms.CharacteristicLength);
+    mesh->Reset(prms.CharacteristicLength, prms.InteractionDistance);
     UnsafeUpdateGeometry();
 }
 

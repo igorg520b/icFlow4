@@ -47,7 +47,7 @@ public:
     unsigned freeNodeCount;
 
     Mesh();
-    void Reset(double CharacteristicLengthMax);
+    void Reset(double CharacteristicLengthMax, double offset);
 
 
 private:

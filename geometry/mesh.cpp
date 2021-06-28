@@ -80,7 +80,7 @@ icy::Mesh::Mesh()
 }
 
 
-void icy::Mesh::Reset(double CharacteristicLengthMax)
+void icy::Mesh::Reset(double CharacteristicLengthMax, double offset)
 {
     allMeshes.clear();
     indenter.GenerateIndenter(CharacteristicLengthMax);
@@ -114,6 +114,11 @@ void icy::Mesh::Reset(double CharacteristicLengthMax)
     MeshFragment *brick = new MeshFragment;
     brick->GenerateBrick(CharacteristicLengthMax);
     allMeshes.push_back(brick);
+
+    mf = new MeshFragment;
+    mf->GenerateContainer(CharacteristicLengthMax, offset);
+    allMeshes.push_back(mf);
+
     RegenerateVisualizedGeometry();
     tree_update_counter=0;
 }
